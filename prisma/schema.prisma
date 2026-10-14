@@ -1,0 +1,144 @@
+// DocAvail Database Schema
+// Supported on SQLite for local development, easily scalable to PostgreSQL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("PATIENT") // PATIENT, DOCTOR, ADMIN
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  patientProfile   PatientProfile?
+  doctorProfile    DoctorProfile?
+  patientAppointments Appointment[] @relation("PatientAppointments")
+  reportsSubmitted ReportedAccount[] @relation("SubmittedReports")
+  reportsReceived  ReportedAccount[] @relation("ReceivedReports")
+  reviewsGiven     Review[]          @relation("PatientReviews")
+}
+
+model PatientProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone     String?
+  location  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DoctorProfile {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialization     String
+  qualification      String
+  experience         Int      @default(0)
+  licenseNumber      String
+  verificationStatus String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  consultationFee    Float    @default(0.0)
+  clinicName         String
+  clinicAddress      String
+  city               String
+  consultationType   String   @default("IN_PERSON") // IN_PERSON, VIDEO, BOTH
+
+  // Real-time availability status (Phase 1 & Phase 3)
+  availabilityStatus String   @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
+  statusNote         String?  // Optional context (e.g., "In surgery until 3 PM")
+  
+  // Rating aggregate
+  rating             Float    @default(5.0)
+  reviewCount        Int      @default(0)
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relationships
+  workingHours WorkingHours[]
+  slots        AppointmentSlot[]
+  appointments Appointment[]     @relation("DoctorAppointments")
+  reviews      Review[]          @relation("DoctorReviews")
+
+  @@index([specialization])
+  @@index([city])
+  @@index([verificationStatus])
+  @@index([availabilityStatus])
+}
+
+model WorkingHours {
+  id        String        @id @default(uuid())
+  doctorId  String
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  dayOfWeek Int           // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime String        // e.g. "09:00"
+  endTime   String        // e.g. "17:00"
+  isActive  Boolean       @default(true)
+
+  @@unique([doctorId, dayOfWeek])
+}
+
+model AppointmentSlot {
+  id        String        @id @default(uuid())
+  doctorId  String
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  startTime DateTime
+  endTime   DateTime
+  isBooked  Boolean       @default(false)
+}
+
+model Appointment {
+  id               String        @id @default(uuid())
+  patientId        String
+  patient          User          @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId         String
+  doctor           DoctorProfile @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
+  date             DateTime      @default(now())
+  startTime        String
+  endTime          String
+  status           String        @default("PENDING") // PENDING, CONFIRMED, REJECTED, COMPLETED, CANCELLED
+  consultationType String        @default("IN_PERSON") // IN_PERSON, VIDEO
+  reasonForVisit   String?
+  patientNotes     String?
+  doctorNotes      String?
+  rejectionReason  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
+}
+
+model ReportedAccount {
+  id             String   @id @default(uuid())
+  reporterId     String
+  reporter       User     @relation("SubmittedReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String
+  reportedUser   User     @relation("ReceivedReports", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         String
+  status         String   @default("PENDING") // PENDING, RESOLVED, DISMISSED
+  createdAt      DateTime @default(now())
+}
+
+model Review {
+  id        String        @id @default(uuid())
+  patientId String
+  patient   User          @relation("PatientReviews", fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId  String
+  doctor    DoctorProfile @relation("DoctorReviews", fields: [doctorId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String
+  createdAt DateTime      @default(now())
+}
