@@ -55,15 +55,16 @@ model DoctorProfile {
   consultationType   String   @default("IN_PERSON") // IN_PERSON, VIDEO, BOTH
 
   // Real-time availability status (Phase 1 & Phase 3)
-  availabilityStatus String   @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
-  statusNote         String?  // Optional context (e.g., "In surgery until 3 PM")
+  availabilityStatus String    @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
+  statusNote         String?   // Optional context (e.g., "In surgery until 3 PM")
+  statusUpdatedAt    DateTime?
   
   // Rating aggregate
-  rating             Float    @default(5.0)
-  reviewCount        Int      @default(0)
+  rating             Float     @default(5.0)
+  reviewCount        Int       @default(0)
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   // Relationships
   workingHours WorkingHours[]
@@ -78,13 +79,16 @@ model DoctorProfile {
 }
 
 model WorkingHours {
-  id        String        @id @default(uuid())
-  doctorId  String
-  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  dayOfWeek Int           // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  startTime String        // e.g. "09:00"
-  endTime   String        // e.g. "17:00"
-  isActive  Boolean       @default(true)
+  id                  String        @id @default(uuid())
+  doctorId            String
+  doctor              DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  dayOfWeek           Int           // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime           String        // e.g. "09:00"
+  endTime             String        // e.g. "17:00"
+  breakStart          String?       // e.g. "13:00"
+  breakEnd            String?       // e.g. "14:00"
+  slotDurationMinutes Int           @default(30)
+  isActive            Boolean       @default(true)
 
   @@unique([doctorId, dayOfWeek])
 }

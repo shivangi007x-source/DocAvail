@@ -28,7 +28,20 @@ export interface UserSession {
     consultationType: string;
     availabilityStatus: AvailabilityStatus;
     statusNote?: string | null;
+    statusUpdatedAt?: string | null;
   } | null;
+}
+
+export interface WorkingHoursItem {
+  id?: string;
+  doctorId?: string;
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime: string; // e.g. "09:00"
+  endTime: string;   // e.g. "17:00"
+  breakStart?: string | null; // e.g. "13:00"
+  breakEnd?: string | null;   // e.g. "14:00"
+  slotDurationMinutes: number; // e.g. 30
+  isActive: boolean;
 }
 
 export interface DoctorSummary {
@@ -48,10 +61,22 @@ export interface DoctorSummary {
   fee: number;
   consultationFee?: number;
   availabilityStatus: AvailabilityStatus;
-  statusNote?: string;
+  statusNote?: string | null;
+  statusUpdatedAt?: string | null;
   avatarUrl: string;
   isVerified?: boolean;
   verificationStatus?: VerificationStatus;
   consultationTypes?: string;
   consultationType?: string;
+  workingHours?: WorkingHoursItem[];
+}
+
+export interface PublicDoctorAvailability {
+  doctorId: string;
+  doctorUserId?: string;
+  name: string;
+  specialization: string;
+  availabilityStatus: AvailabilityStatus;
+  statusNote?: string | null;
+  statusUpdatedAt?: string | null;
 }

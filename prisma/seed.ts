@@ -87,6 +87,7 @@ async function main() {
       consultationType: 'IN_PERSON',
       availabilityStatus: 'AVAILABLE',
       statusNote: 'Accepting walk-ins & immediate online slot requests',
+      statusUpdatedAt: new Date(),
       rating: 4.9,
       reviewCount: 128,
     },
@@ -118,6 +119,7 @@ async function main() {
       consultationType: 'BOTH',
       availabilityStatus: 'BUSY',
       statusNote: 'Currently in patient consultation. Next open slot at 3:30 PM',
+      statusUpdatedAt: new Date(Date.now() - 25 * 60 * 1000), // 25 mins ago
       rating: 4.8,
       reviewCount: 94,
     },
@@ -149,6 +151,7 @@ async function main() {
       consultationType: 'IN_PERSON',
       availabilityStatus: 'AVAILABLE',
       statusNote: 'On-site today until 6:00 PM',
+      statusUpdatedAt: new Date(Date.now() - 10 * 60 * 1000), // 10 mins ago
       rating: 4.95,
       reviewCount: 210,
     },
@@ -180,12 +183,13 @@ async function main() {
       consultationType: 'VIDEO',
       availabilityStatus: 'UNAVAILABLE',
       statusNote: 'Awaiting admin credential verification',
+      statusUpdatedAt: new Date(Date.now() - 2 * 3600 * 1000),
       rating: 5.0,
       reviewCount: 0,
     },
   });
 
-  // 4. Create Working Hours for Approved Doctors
+  // 4. Create Working Hours for Approved Doctors (Mon - Fri, with breaks and 30m slot)
   const days = [1, 2, 3, 4, 5]; // Mon - Fri
   for (const day of days) {
     await prisma.workingHours.create({
@@ -194,6 +198,9 @@ async function main() {
         dayOfWeek: day,
         startTime: '09:00',
         endTime: '17:00',
+        breakStart: '13:00',
+        breakEnd: '14:00',
+        slotDurationMinutes: 30,
         isActive: true,
       },
     });
@@ -204,6 +211,9 @@ async function main() {
         dayOfWeek: day,
         startTime: '08:30',
         endTime: '16:30',
+        breakStart: '12:30',
+        breakEnd: '13:30',
+        slotDurationMinutes: 30,
         isActive: true,
       },
     });
@@ -214,6 +224,9 @@ async function main() {
         dayOfWeek: day,
         startTime: '10:00',
         endTime: '18:00',
+        breakStart: '13:00',
+        breakEnd: '14:00',
+        slotDurationMinutes: 30,
         isActive: true,
       },
     });

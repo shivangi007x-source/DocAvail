@@ -64,6 +64,7 @@ export async function getSessionUser() {
           consultationType: true,
           availabilityStatus: true,
           statusNote: true,
+          statusUpdatedAt: true,
         },
       },
     },
