@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
@@ -12,11 +13,13 @@ import { DoctorCard } from '@/components/ui/DoctorCard';
 import { SlotPicker } from '@/components/ui/SlotPicker';
 import { useToast } from '@/components/ui/Toast';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
+import { useDoctorAvailabilityStream } from '@/hooks/useDoctorAvailability';
+import { useQuery } from '@tanstack/react-query';
+import { DoctorSummary } from '@/lib/types';
 import {
   MEDICAL_SPECIALIZATIONS,
   CITIES,
   FEATURED_SPECIALTIES,
-  DEMO_DOCTORS,
 } from '@/lib/constants';
 import {
   Search,
@@ -30,6 +33,9 @@ import {
   Users,
   Building,
   Calendar,
+  Radio,
+  Wifi,
+  WifiOff,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -38,12 +44,50 @@ export default function HomePage() {
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
 
+  // Real-time SSE stream hook
+  const { connectionStatus } = useDoctorAvailabilityStream();
+
+  // Fetch doctors from real database API
+  const { data: doctorsData, isLoading: doctorsLoading } = useQuery<{
+    doctors: DoctorSummary[];
+    count: number;
+  }>({
+    queryKey: ['doctors'],
+    queryFn: async () => {
+      const res = await fetch('/api/doctors');
+      if (!res.ok) throw new Error('Failed to load doctors');
+      return res.json();
+    },
+    staleTime: 60 * 1000,
+  });
+
+  const doctors = doctorsData?.doctors || [];
+
+  // Filtered doctors for directory / search preview
+  const filteredDoctors = doctors.filter((doc) => {
+    const matchesSearch =
+      !searchQuery ||
+      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      doc.clinicName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesSpecialty =
+      !selectedSpecialty || doc.specialization === selectedSpecialty;
+
+    const matchesCity = !selectedCity || doc.city === selectedCity;
+
+    return matchesSearch && matchesSpecialty && matchesCity;
+  });
+
+  // Online count
+  const onlineCount = doctors.filter((d) => d.availabilityStatus === 'AVAILABLE').length;
+
   // Slot Booking Modal State
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
   const [bookingSlotId, setBookingSlotId] = useState<string>('s1');
   const [isBooking, setIsBooking] = useState(false);
 
-  const selectedDoctor = DEMO_DOCTORS.find((d) => d.id === selectedDoctorId);
+  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId);
 
   const handleOpenBooking = (doctorId: string) => {
     setSelectedDoctorId(doctorId);
@@ -76,7 +120,7 @@ export default function HomePage() {
                 <StatusIndicator status="AVAILABLE" pulse={true} showText={false} />
                 <span>Live Doctor Availability Network</span>
                 <span className="bg-brand-100 text-brand-800 px-2 py-0.5 rounded-full text-[10px]">
-                  342 Online Now
+                  {onlineCount > 0 ? `${onlineCount} Available Online` : 'Real-time Live Sync'}
                 </span>
               </div>
 
@@ -114,19 +158,33 @@ export default function HomePage() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                   <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                     <span className="text-slate-400">Quick Filters:</span>
-                    <Badge variant="available" className="cursor-pointer" dot>
+                    <Badge
+                      variant="available"
+                      className="cursor-pointer"
+                      dot
+                      onClick={() => setSelectedSpecialty('')}
+                    >
                       Available Now
                     </Badge>
-                    <Badge variant="brand" className="cursor-pointer">
-                      In-Person Clinic
+                    <Badge
+                      variant="brand"
+                      className="cursor-pointer"
+                      onClick={() => setSelectedCity('New York, NY')}
+                    >
+                      New York Clinics
                     </Badge>
                   </div>
-                  <Link href="/doctors" className="w-full sm:w-auto">
-                    <Button variant="default" className="w-full sm:w-auto gap-2 px-6 shadow-md">
-                      <Search className="h-4 w-4" />
-                      Search Available Doctors
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="default"
+                    className="w-full sm:w-auto gap-2 px-6 shadow-md"
+                    onClick={() => {
+                      const el = document.getElementById('featured-doctors');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    <Search className="h-4 w-4" />
+                    Browse Doctors ({filteredDoctors.length})
+                  </Button>
                 </div>
               </div>
 
@@ -153,57 +211,81 @@ export default function HomePage() {
               <Card className="relative p-6 bg-white shadow-2xl border-slate-200/80 space-y-5">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full bg-emerald-500 animate-ping"></div>
+                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></div>
                     <h3 className="font-bold text-slate-900 text-sm">Real-Time Status Monitor</h3>
                   </div>
-                  <span className="text-[11px] font-mono text-slate-400">LIVE FEED</span>
+                  <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500">
+                    {connectionStatus === 'connected' ? (
+                      <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+                        <Wifi className="h-3 w-3" /> LIVE SSE SYNC
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-slate-400">
+                        <WifiOff className="h-3 w-3" /> CONNECTING...
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Status Ticker Examples */}
+                {/* Status Ticker from Real Doctors */}
                 <div className="space-y-3">
-                  <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/60 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center font-bold text-emerald-800 text-sm">
-                        SJ
+                  {doctors.slice(0, 3).map((doc) => (
+                    <div
+                      key={doc.id}
+                      className={`p-3 rounded-xl border flex items-center justify-between transition-all ${
+                        doc.availabilityStatus === 'AVAILABLE'
+                          ? 'bg-emerald-50/70 border-emerald-200/60'
+                          : doc.availabilityStatus === 'BUSY'
+                          ? 'bg-amber-50/70 border-amber-200/60'
+                          : 'bg-rose-50/70 border-rose-200/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative h-10 w-10 rounded-full overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+                          <Image
+                            src={doc.avatarUrl}
+                            alt={doc.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-900">{doc.name}</h4>
+                          <p className="text-[11px] text-slate-500 truncate max-w-[170px]">
+                            {doc.specialization} • {doc.clinicName}
+                          </p>
+                          {doc.statusNote && (
+                            <p className="text-[10px] italic text-slate-600 truncate max-w-[170px]">
+                              &ldquo;{doc.statusNote}&rdquo;
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900">Dr. Sarah Jenkins</h4>
-                        <p className="text-[11px] text-emerald-700">Cardiology • Apex Heart Clinic</p>
-                      </div>
+                      <Badge
+                        variant={
+                          doc.availabilityStatus === 'AVAILABLE'
+                            ? 'available'
+                            : doc.availabilityStatus === 'BUSY'
+                            ? 'busy'
+                            : 'unavailable'
+                        }
+                        dot
+                      >
+                        {doc.availabilityStatus}
+                      </Badge>
                     </div>
-                    <Badge variant="available" dot>AVAILABLE</Badge>
-                  </div>
+                  ))}
 
-                  <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/60 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center font-bold text-amber-800 text-sm">
-                        MV
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900">Dr. Marcus Vance</h4>
-                        <p className="text-[11px] text-amber-700">General Med • Metro Family</p>
-                      </div>
+                  {doctors.length === 0 && !doctorsLoading && (
+                    <div className="py-6 text-center text-xs text-slate-400">
+                      Loading live doctor status feed...
                     </div>
-                    <Badge variant="busy" dot>BUSY (30m)</Badge>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-rose-50/70 border border-rose-200/60 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center font-bold text-rose-800 text-sm">
-                        RC
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-900">Dr. Robert Chen</h4>
-                        <p className="text-[11px] text-rose-700">Pediatrics • Sunshine Clinic</p>
-                      </div>
-                    </div>
-                    <Badge variant="unavailable" dot>OFFLINE</Badge>
-                  </div>
+                  )}
                 </div>
 
-                <div className="text-center pt-2">
-                  <p className="text-[11px] text-slate-400">
-                    Doctors update availability directly from their live status toggle bar.
+                <div className="text-center pt-2 border-t border-slate-100">
+                  <p className="text-[11px] text-slate-500">
+                    Live broadcast updates instantly when doctors toggle status on their dashboard.
                   </p>
                 </div>
               </Card>
@@ -223,18 +305,34 @@ export default function HomePage() {
               Find verified specialists with live consultation availability
             </p>
           </div>
-          <Link href="/doctors">
-            <Button variant="outline" size="sm" className="gap-1 text-xs">
-              View All Specializations
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={() => {
+              setSelectedSpecialty('');
+              const el = document.getElementById('featured-doctors');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            View All Specializations
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURED_SPECIALTIES.map((spec) => (
             <Card
               key={spec.name}
+              onClick={() => {
+                setSelectedSpecialty(
+                  spec.name === 'General Physician'
+                    ? 'General Medicine'
+                    : spec.name
+                );
+                const el = document.getElementById('featured-doctors');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
               className="p-6 cursor-pointer hover:border-brand-400 group transition-all"
             >
               <div className="flex items-start justify-between">
@@ -256,30 +354,68 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Doctors Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+      {/* Featured Doctors Showcase (Connected to Real Database & SSE) */}
+      <section id="featured-doctors" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 scroll-mt-20">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Badge variant="available" dot>REAL-TIME AVAILABLE DOCTORS</Badge>
+              <Badge variant="available" dot>REAL-TIME VERIFIED DOCTORS</Badge>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-2">
               Top Verified Specialists Ready Today
             </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Availability badges and notes sync live from doctor dashboards without page refresh.
+            </p>
           </div>
-          <Link href="/doctors">
-            <Button variant="default" size="sm" className="gap-1.5 text-xs">
-              See All Doctors
-              <ArrowRight className="h-3.5 w-3.5" />
+          {(selectedSpecialty || selectedCity || searchQuery) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedSpecialty('');
+                setSelectedCity('');
+                setSearchQuery('');
+              }}
+              className="text-xs text-brand-700 hover:bg-brand-50"
+            >
+              Reset Filters
             </Button>
-          </Link>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {DEMO_DOCTORS.map((doc) => (
-            <DoctorCard key={doc.id} doctor={doc} onBookSlot={handleOpenBooking} />
-          ))}
-        </div>
+        {doctorsLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-72 rounded-2xl bg-slate-100 animate-pulse border border-slate-200" />
+            ))}
+          </div>
+        ) : filteredDoctors.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredDoctors.map((doc) => (
+              <DoctorCard key={doc.id} doctor={doc} onBookSlot={handleOpenBooking} />
+            ))}
+          </div>
+        ) : (
+          <Card className="p-12 text-center border-slate-200 space-y-3">
+            <Stethoscope className="h-10 w-10 text-slate-400 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-base">No doctors found matching filters</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              Try adjusting your search query, specialization, or city to find available healthcare providers.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSelectedSpecialty('');
+                setSelectedCity('');
+                setSearchQuery('');
+              }}
+            >
+              Clear All Filters
+            </Button>
+          </Card>
+        )}
       </section>
 
       {/* How It Works Section */}
@@ -360,7 +496,9 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500 font-semibold">Consultation Fee: ${selectedDoctor.fee}</span>
+              <span className="text-xs text-slate-500 font-semibold">
+                Consultation Fee: ${selectedDoctor.consultationFee ?? selectedDoctor.fee}
+              </span>
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" onClick={() => setSelectedDoctorId(null)}>
                   Cancel

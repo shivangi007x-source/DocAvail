@@ -6,7 +6,7 @@ import { Badge } from './Badge';
 import { Button } from './Button';
 import { StatusIndicator } from './StatusIndicator';
 import { formatCurrency } from '@/lib/utils';
-import { Star, MapPin, Building2, CalendarCheck, ShieldCheck } from 'lucide-react';
+import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock } from 'lucide-react';
 
 interface DoctorCardProps {
   doctor: DoctorSummary;
@@ -18,18 +18,42 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) =>
   const qualification = doctor.qualification || doctor.qualifications || '';
   const fee = doctor.consultationFee ?? doctor.fee ?? 0;
 
+  const formatTimeAgo = (dateStr?: string | null) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diffSeconds < 60) return 'Just now';
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  const timeAgo = formatTimeAgo(doctor.statusUpdatedAt);
+
   return (
     <Card className="overflow-hidden flex flex-col justify-between border border-slate-200/90 hover:border-brand-300 group">
       <div className="p-5 space-y-4">
         {/* Top Bar: Live Status & Verified Badge */}
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <StatusIndicator status={doctor.availabilityStatus} />
-          {isVerified && (
-            <Badge variant="verified" className="gap-1 text-[11px]">
-              <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
-              Verified Doctor
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            <StatusIndicator status={doctor.availabilityStatus} />
+          </div>
+          <div className="flex items-center gap-1.5">
+            {timeAgo && (
+              <span className="text-[10px] text-slate-400 flex items-center gap-0.5">
+                <Clock className="h-3 w-3 text-slate-300" />
+                {timeAgo}
+              </span>
+            )}
+            {isVerified && (
+              <Badge variant="verified" className="gap-1 text-[11px]">
+                <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
+                Verified
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Doctor Info Row */}

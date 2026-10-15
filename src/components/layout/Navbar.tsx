@@ -46,10 +46,15 @@ export const Navbar: React.FC = () => {
             )}
 
             {user?.role === 'DOCTOR' && (
-              <Link href="/doctor/dashboard" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
-                <Stethoscope className="h-4 w-4" />
-                Doctor Portal
-              </Link>
+              <>
+                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                  <Stethoscope className="h-4 w-4" />
+                  Doctor Portal
+                </Link>
+                <Link href="/doctor/schedule" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
+                  Schedule
+                </Link>
+              </>
             )}
 
             {user?.role === 'ADMIN' && (
