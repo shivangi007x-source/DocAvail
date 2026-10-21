@@ -18,6 +18,7 @@ import {
   FileText,
   Clock3,
   Users,
+  Settings,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -45,7 +46,7 @@ export const Navbar: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
+          <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-slate-600">
             <Link href="/doctors" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
               <Search className="h-4 w-4" />
               Find Doctors
@@ -53,30 +54,39 @@ export const Navbar: React.FC = () => {
             
             {user?.role === 'PATIENT' && (
               <>
-                <Link href="/patient/dashboard" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
-                  <Calendar className="h-4 w-4" />
+                <Link href="/patient/dashboard" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/patient/medical-history" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                <Link href="/patient/medical-history" className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
                   <FileText className="h-4 w-4" />
                   My Medical History
+                </Link>
+                <Link href="/patient/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  Appointments
+                </Link>
+                <Link href="/patient/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  My Profile
                 </Link>
               </>
             )}
 
             {user?.role === 'DOCTOR' && (
               <>
-                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
-                  <Stethoscope className="h-4 w-4" />
+                <Link href="/doctor/dashboard" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/doctor/patients" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                <Link href="/doctor/patients" className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
                   <Users className="h-4 w-4" />
                   Patient Records
                 </Link>
-                <Link href="/doctor/schedule" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
-                  <Clock3 className="h-4 w-4" />
+                <Link href="/doctor/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  Appointments
+                </Link>
+                <Link href="/doctor/schedule" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   Working Hours
+                </Link>
+                <Link href="/doctor/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  My Profile
                 </Link>
               </>
             )}
@@ -90,7 +100,7 @@ export const Navbar: React.FC = () => {
           </nav>
 
           {/* Auth Action Buttons / User Menu */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3 bg-slate-50 p-1.5 pl-3 rounded-xl border border-slate-200">
                 <div className="text-right">
@@ -129,7 +139,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Menu Toggle Button */}
-          <div className="flex md:hidden items-center gap-2">
+          <div className="flex lg:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"
@@ -143,7 +153,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 space-y-3 animate-in slide-in-from-top duration-200">
+        <div className="lg:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 space-y-3 animate-in slide-in-from-top duration-200">
           <Link
             href="/doctors"
             className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
@@ -161,7 +171,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Calendar className="h-4 w-4 text-brand-600" />
-                Patient Dashboard
+                Dashboard
               </Link>
               <Link
                 href="/patient/medical-history"
@@ -170,6 +180,22 @@ export const Navbar: React.FC = () => {
               >
                 <FileText className="h-4 w-4 text-brand-600" />
                 My Medical History
+              </Link>
+              <Link
+                href="/patient/appointments"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Calendar className="h-4 w-4 text-brand-600" />
+                Appointments
+              </Link>
+              <Link
+                href="/patient/profile"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <UserIcon className="h-4 w-4 text-brand-600" />
+                My Profile
               </Link>
             </>
           )}
@@ -182,7 +208,7 @@ export const Navbar: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Stethoscope className="h-4 w-4 text-brand-600" />
-                Doctor Dashboard
+                Dashboard
               </Link>
               <Link
                 href="/doctor/patients"
@@ -193,12 +219,28 @@ export const Navbar: React.FC = () => {
                 Patient Records
               </Link>
               <Link
+                href="/doctor/appointments"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Calendar className="h-4 w-4 text-brand-600" />
+                Appointments
+              </Link>
+              <Link
                 href="/doctor/schedule"
                 className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <Clock3 className="h-4 w-4 text-brand-600" />
                 Working Hours
+              </Link>
+              <Link
+                href="/doctor/profile"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <UserIcon className="h-4 w-4 text-brand-600" />
+                My Profile
               </Link>
             </>
           )}

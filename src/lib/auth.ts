@@ -45,8 +45,12 @@ export async function getSessionUser() {
       createdAt: true,
       patientProfile: {
         select: {
+          id: true,
           phone: true,
           location: true,
+          dateOfBirth: true,
+          gender: true,
+          bloodGroup: true,
         },
       },
       doctorProfile: {
@@ -62,6 +66,7 @@ export async function getSessionUser() {
           clinicAddress: true,
           city: true,
           consultationType: true,
+          treatedConditions: true,
           availabilityStatus: true,
           statusNote: true,
           statusUpdatedAt: true,
