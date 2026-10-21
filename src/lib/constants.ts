@@ -1,22 +1,24 @@
 export const MEDICAL_SPECIALIZATIONS = [
+  'Endocrinology',
+  'Pulmonology',
+  'Obstetrics and Gynaecology',
+  'Neurology',
+  'Internal Medicine',
   'General Medicine',
   'Cardiology',
   'Dermatology',
   'Pediatrics',
   'Orthopedics',
-  'Neurology',
-  'Gynecology & Obstetrics',
   'Psychiatry',
+  'Gastroenterology',
   'Ophthalmology',
   'ENT (Ear, Nose, Throat)',
-  'Endocrinology',
-  'Gastroenterology',
 ] as const;
 
 export const CITIES = [
   'New York, NY',
-  'Los Angeles, CA',
   'Chicago, IL',
+  'Los Angeles, CA',
   'Houston, TX',
   'Phoenix, AZ',
   'Philadelphia, PA',
@@ -27,15 +29,15 @@ export const CITIES = [
 
 export const POPULAR_SEARCH_CONDITIONS = [
   'Diabetes',
-  'Hypertension',
-  'Skin Allergy',
-  'Migraine',
   'Asthma',
+  'PCOS',
+  'Migraine',
+  'Anaemia',
+  'Hypertension',
+  'Thyroid Disorders',
+  'Skin Allergy',
   'Heart Disease',
-  'Acne',
-  'Fever & Flu',
-  'Eczema',
-  'High Cholesterol',
+  'Wheezing',
 ] as const;
 
 /**
@@ -43,31 +45,65 @@ export const POPULAR_SEARCH_CONDITIONS = [
  * Enables users searching for common diseases or symptoms to discover qualified specialists.
  */
 export const DISEASE_SPECIALTY_MAPPINGS: Record<string, string[]> = {
-  diabetes: ['Endocrinology', 'General Medicine'],
-  'type 2 diabetes': ['Endocrinology', 'General Medicine'],
-  'type 1 diabetes': ['Endocrinology', 'Pediatrics', 'General Medicine'],
-  hypertension: ['Cardiology', 'General Medicine'],
-  'high blood pressure': ['Cardiology', 'General Medicine'],
+  // Diabetes & Endocrine
+  diabetes: ['Endocrinology', 'Internal Medicine', 'General Medicine'],
+  'type 2 diabetes': ['Endocrinology', 'Internal Medicine'],
+  'type 1 diabetes': ['Endocrinology', 'Pediatrics'],
+  thyroid: ['Endocrinology', 'Internal Medicine'],
+  'thyroid disorders': ['Endocrinology', 'Internal Medicine'],
+  hypothyroidism: ['Endocrinology'],
+  hyperthyroidism: ['Endocrinology'],
+
+  // Asthma & Respiratory
+  asthma: ['Pulmonology', 'Internal Medicine', 'General Medicine', 'Pediatrics'],
+  wheezing: ['Pulmonology', 'Internal Medicine'],
+  respiratory: ['Pulmonology', 'Internal Medicine'],
+  'respiratory conditions': ['Pulmonology'],
+  cough: ['Pulmonology', 'General Medicine', 'Internal Medicine'],
+  bronchitis: ['Pulmonology', 'Internal Medicine'],
+
+  // PCOS & Women's Health
+  pcos: ['Obstetrics and Gynaecology', 'Endocrinology'],
+  'polycystic ovary syndrome': ['Obstetrics and Gynaecology', 'Endocrinology'],
+  'menstrual disorders': ['Obstetrics and Gynaecology'],
+  'irregular cycles': ['Obstetrics and Gynaecology'],
+  menstrual: ['Obstetrics and Gynaecology'],
+  gynecology: ['Obstetrics and Gynaecology'],
+
+  // Migraine & Neurology
+  migraine: ['Neurology', 'Internal Medicine', 'General Medicine'],
+  headache: ['Neurology', 'Internal Medicine', 'General Medicine'],
+  'headache disorders': ['Neurology'],
+  neurology: ['Neurology'],
+  cluster: ['Neurology'],
+
+  // Anaemia & Internal Medicine
+  anaemia: ['Internal Medicine', 'General Medicine'],
+  anemia: ['Internal Medicine', 'General Medicine'],
+  'iron deficiency': ['Internal Medicine', 'General Medicine'],
+  'iron-deficiency anaemia': ['Internal Medicine', 'General Medicine'],
+  'low haemoglobin': ['Internal Medicine'],
+  fatigue: ['Internal Medicine', 'General Medicine'],
+
+  // Cardiology & Cardiovascular
+  hypertension: ['Cardiology', 'Internal Medicine', 'General Medicine'],
+  'high blood pressure': ['Cardiology', 'Internal Medicine', 'General Medicine'],
   'heart disease': ['Cardiology'],
   heart: ['Cardiology'],
   arrhythmia: ['Cardiology'],
-  'chest pain': ['Cardiology', 'General Medicine'],
-  'high cholesterol': ['Cardiology', 'General Medicine', 'Endocrinology'],
+  'chest pain': ['Cardiology', 'Internal Medicine'],
+
+  // Dermatology
   'skin allergy': ['Dermatology', 'General Medicine'],
-  allergy: ['Dermatology', 'General Medicine', 'Pediatrics'],
+  allergy: ['Dermatology', 'Pulmonology', 'General Medicine'],
   eczema: ['Dermatology'],
   acne: ['Dermatology'],
   psoriasis: ['Dermatology'],
-  rash: ['Dermatology', 'General Medicine'],
-  dermatitis: ['Dermatology'],
-  rosacea: ['Dermatology'],
-  migraine: ['Neurology', 'General Medicine'],
-  headache: ['Neurology', 'General Medicine'],
-  asthma: ['General Medicine', 'Pediatrics'],
-  cough: ['General Medicine', 'Pediatrics'],
-  fever: ['General Medicine', 'Pediatrics'],
-  flu: ['General Medicine', 'Pediatrics'],
-  fatigue: ['General Medicine'],
+  rash: ['Dermatology'],
+
+  // General & Orthopedics
+  fever: ['Internal Medicine', 'General Medicine', 'Pediatrics'],
+  flu: ['Internal Medicine', 'General Medicine', 'Pediatrics'],
   'joint pain': ['Orthopedics'],
   arthritis: ['Orthopedics'],
   'back pain': ['Orthopedics'],
@@ -77,39 +113,39 @@ export const DISEASE_SPECIALTY_MAPPINGS: Record<string, string[]> = {
 
 export const FEATURED_SPECIALTIES = [
   {
-    name: 'General Physician',
-    icon: 'Stethoscope',
-    count: '142 Doctors Available',
-    description: 'Cold, flu, routine checkups & primary care',
-  },
-  {
-    name: 'Cardiology',
-    icon: 'HeartPulse',
-    count: '48 Doctors Available',
-    description: 'Heart health, blood pressure & ECG consultation',
-  },
-  {
-    name: 'Dermatology',
-    icon: 'Sparkles',
-    count: '64 Doctors Available',
-    description: 'Skin disorders, acne, allergies & cosmetic health',
-  },
-  {
-    name: 'Pediatrics',
-    icon: 'Baby',
-    count: '89 Doctors Available',
-    description: 'Child growth, vaccinations & pediatric emergency',
-  },
-  {
-    name: 'Orthopedics',
+    name: 'Endocrinology',
     icon: 'Activity',
-    count: '53 Doctors Available',
-    description: 'Joint pain, fractures & sports medicine',
+    count: 'Diabetes & Thyroid Focus',
+    description: 'Type 2 Diabetes, insulin resistance & hormone regulation',
+  },
+  {
+    name: 'Pulmonology',
+    icon: 'Stethoscope',
+    count: 'Asthma & Lung Specialists',
+    description: 'Asthma, wheezing, inhaler therapy & respiratory wellness',
+  },
+  {
+    name: 'Obstetrics and Gynaecology',
+    icon: 'Sparkles',
+    count: 'PCOS & Reproductive Health',
+    description: 'PCOS management, irregular cycles & fertility support',
   },
   {
     name: 'Neurology',
     icon: 'Brain',
-    count: '31 Doctors Available',
-    description: 'Migraines, nerve care & brain health',
+    count: 'Headache & Migraine Relief',
+    description: 'Migraines, neurological triggers & preventive care',
+  },
+  {
+    name: 'Internal Medicine',
+    icon: 'HeartPulse',
+    count: 'Anaemia & Primary Diagnostics',
+    description: 'Anaemia, low haemoglobin, iron deficiency & wellness',
+  },
+  {
+    name: 'Cardiology',
+    icon: 'HeartPulse',
+    count: 'Heart & Blood Pressure',
+    description: 'Hypertension, ECG reviews & cardiovascular screening',
   },
 ];

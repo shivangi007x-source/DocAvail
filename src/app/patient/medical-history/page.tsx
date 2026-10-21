@@ -243,6 +243,7 @@ export default function PatientMedicalHistoryPage() {
               My Medical History
             </h1>
             <Badge variant="brand">CONFIDENTIAL</Badge>
+            <Badge variant="busy" className="border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-medium">Demo Data — Fictional Patients & Records</Badge>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Your encrypted chronological medical records, prescriptions, allergies, and clinical notes.

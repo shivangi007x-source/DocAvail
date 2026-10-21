@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 import { DoctorSummary } from '@/lib/types';
 import { DoctorCard } from '@/components/ui/DoctorCard';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +34,8 @@ import {
 } from 'lucide-react';
 
 export default function FindDoctorPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
@@ -43,11 +47,11 @@ export default function FindDoctorPage() {
 
   // Booking modal state
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
-  const [bookingSlotId, setBookingSlotId] = useState<string>('s1');
+  const [bookingSlotId, setBookingSlotId] = useState<string>('s2');
   const [isBooking, setIsBooking] = useState(false);
 
   // Fetch doctors with search query parameters passed to the backend
-  const { data: doctorsData, isLoading, refetch } = useQuery<{
+  const { data: doctorsData, isLoading } = useQuery<{
     doctors: DoctorSummary[];
     count: number;
   }>({
@@ -84,18 +88,62 @@ export default function FindDoctorPage() {
     setAvailabilityFilter('ALL');
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!selectedDoctor) return;
+
+    if (!user) {
+      toast('Sign In Required', 'Please sign in with a patient demo account to schedule an appointment.', 'error');
+      router.push(`/login?redirect=/doctors`);
+      return;
+    }
+
+    if (user.role === 'DOCTOR') {
+      toast('Account Notice', 'Doctor accounts cannot schedule patient appointments. Please use a patient demo account.', 'info');
+      return;
+    }
+
     setIsBooking(true);
-    setTimeout(() => {
-      setIsBooking(false);
-      setSelectedDoctorId(null);
+    try {
+      const slotMap: Record<string, string> = {
+        s1: '09:30 AM',
+        s2: '10:30 AM',
+        s3: '11:30 AM',
+        s4: '02:00 PM',
+        s5: '03:30 PM',
+        s6: '04:30 PM',
+      };
+      const chosenTime = slotMap[bookingSlotId] || '10:30 AM';
+
+      const res = await fetch('/api/patient/me/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctorId: selectedDoctor.id,
+          date: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+          startTime: chosenTime,
+          endTime: chosenTime.replace('30', '00'),
+          consultationType: 'IN_PERSON',
+          reasonForVisit: `Consultation for ${selectedDoctor.specialization}`,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) {
+        throw new Error(resData.error || 'Failed to book appointment');
+      }
+
       toast(
-        'Appointment Request Sent!',
-        `Your request with ${selectedDoctor.name} has been submitted for confirmation.`,
+        'Appointment Confirmed!',
+        `Your consultation with ${selectedDoctor.name} has been confirmed.`,
         'success'
       );
-    }, 900);
+      setSelectedDoctorId(null);
+      router.push('/patient/appointments');
+    } catch (err: any) {
+      toast('Booking Failed', err.message, 'error');
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -306,7 +354,7 @@ export default function FindDoctorPage() {
                   { id: 's3', time: '11:30 AM', available: false },
                   { id: 's4', time: '02:00 PM', available: true },
                   { id: 's5', time: '03:30 PM', available: true },
-                  { id: 's6', time: '04:30 PM', available: false },
+                  { id: 's6', time: '04:30 PM', available: true },
                 ]}
                 selectedSlotId={bookingSlotId}
                 onSelectSlot={setBookingSlotId}

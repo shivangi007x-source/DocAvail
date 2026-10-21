@@ -1,12 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { DoctorSummary } from '@/lib/types';
 import { Card } from './Card';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { StatusIndicator } from './StatusIndicator';
 import { formatCurrency } from '@/lib/utils';
-import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock, Activity } from 'lucide-react';
+import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock, Activity, User, ArrowUpRight } from 'lucide-react';
 
 interface DoctorCardProps {
   doctor: DoctorSummary;
@@ -60,18 +61,24 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
 
         {/* Doctor Info Row */}
         <div className="flex gap-4 items-start">
-          <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200">
+          <Link
+            href={`/doctors/${doctor.id}`}
+            className="relative h-16 w-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 hover:ring-2 hover:ring-brand-500 transition-all"
+          >
             <Image
               src={doctor.avatarUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop'}
               alt={doctor.name}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
             />
-          </div>
+          </Link>
           <div className="space-y-1 min-w-0">
-            <h3 className="font-bold text-slate-900 text-base leading-tight truncate group-hover:text-brand-700 transition-colors">
+            <Link
+              href={`/doctors/${doctor.id}`}
+              className="font-bold text-slate-900 text-base leading-tight truncate block hover:text-brand-700 transition-colors"
+            >
               {doctor.name}
-            </h3>
+            </Link>
             <p className="text-xs font-semibold text-brand-600">{doctor.specialization}</p>
             <p className="text-xs text-slate-500 truncate">{qualification}</p>
             {doctor.experience ? (
@@ -139,19 +146,30 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
       </div>
 
       {/* Action Footer */}
-      <div className="px-5 pb-5 pt-0 space-y-2">
+      <div className="px-5 pb-5 pt-0 grid grid-cols-2 gap-2">
+        <Link href={`/doctors/${doctor.id}`} className="w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full text-xs font-semibold gap-1 hover:border-brand-400 hover:text-brand-700"
+          >
+            <User className="h-3.5 w-3.5 text-slate-500" />
+            View Profile
+          </Button>
+        </Link>
         <Button
           onClick={() => onBookSlot?.(doctor.id)}
           disabled={doctor.availabilityStatus === 'UNAVAILABLE'}
-          className="w-full gap-2 text-xs font-semibold shadow-sm"
+          size="sm"
+          className="w-full gap-1 text-xs font-semibold shadow-sm"
           variant={doctor.availabilityStatus === 'AVAILABLE' ? 'default' : 'secondary'}
         >
-          <CalendarCheck className="h-4 w-4" />
+          <CalendarCheck className="h-3.5 w-3.5" />
           {doctor.availabilityStatus === 'AVAILABLE'
-            ? 'Book Appointment Slot'
+            ? 'Book Slot'
             : doctor.availabilityStatus === 'BUSY'
-            ? 'View Next Available Slot'
-            : 'Currently Offline'}
+            ? 'Next Slot'
+            : 'Offline'}
         </Button>
       </div>
     </Card>

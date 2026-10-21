@@ -68,6 +68,7 @@ export default function DoctorPatientListPage() {
               Patient Records & Charts
             </h1>
             <Badge variant="brand">AUTHORIZED ACCESS</Badge>
+            <Badge variant="busy" className="border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-medium">Demo Data — Fictional Patients</Badge>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Access medical histories, record clinical consultation notes, and prescribe medications for authorized patients.
