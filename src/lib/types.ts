@@ -11,8 +11,12 @@ export interface UserSession {
   role: UserRole;
   avatarUrl?: string;
   patientProfile?: {
+    id?: string;
     phone?: string | null;
     location?: string | null;
+    dateOfBirth?: string | null;
+    gender?: string | null;
+    bloodGroup?: string | null;
   } | null;
   doctorProfile?: {
     id: string;
@@ -26,6 +30,7 @@ export interface UserSession {
     clinicAddress: string;
     city: string;
     consultationType: string;
+    treatedConditions?: string | null;
     availabilityStatus: AvailabilityStatus;
     statusNote?: string | null;
     statusUpdatedAt?: string | null;
@@ -68,6 +73,8 @@ export interface DoctorSummary {
   verificationStatus?: VerificationStatus;
   consultationTypes?: string;
   consultationType?: string;
+  treatedConditions?: string | null;
+  conditions?: string[];
   workingHours?: WorkingHoursItem[];
 }
 
@@ -79,4 +86,71 @@ export interface PublicDoctorAvailability {
   availabilityStatus: AvailabilityStatus;
   statusNote?: string | null;
   statusUpdatedAt?: string | null;
+}
+
+export type RecordType = 'DIAGNOSIS' | 'ALLERGY' | 'MEDICATION' | 'CONSULTATION_NOTE' | 'LAB_REPORT' | 'OTHER';
+
+export interface MedicalRecordItem {
+  id: string;
+  patientId: string;
+  doctorId?: string | null;
+  doctorName?: string | null;
+  doctorSpecialization?: string | null;
+  doctorClinic?: string | null;
+  title: string;
+  recordType: RecordType;
+  description: string;
+  diagnosedDate?: string | null;
+  severity?: 'MILD' | 'MODERATE' | 'SEVERE' | null;
+  status?: 'ACTIVE' | 'RESOLVED' | 'CHRONIC' | null;
+  fileUrl?: string | null;
+  addedByRole: 'PATIENT' | 'DOCTOR';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PrescriptionItem {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialization: string;
+  doctorClinic?: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  duration: string;
+  instructions?: string | null;
+  prescribedDate: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'DISCONTINUED';
+  createdAt: string;
+}
+
+export interface DoctorPatientAccessItem {
+  id: string;
+  patientId: string;
+  doctorId: string;
+  doctorName: string;
+  doctorSpecialization: string;
+  doctorClinic: string;
+  status: 'GRANTED' | 'REVOKED';
+  grantedAt: string;
+  reason?: string | null;
+}
+
+export interface PatientAuthorizedSummary {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  location?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  bloodGroup?: string | null;
+  recordCount: number;
+  prescriptionCount: number;
+  lastVisit?: string | null;
+  accessStatus: string;
+  accessGrantedAt: string;
 }

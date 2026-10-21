@@ -21,22 +21,30 @@ model User {
   updatedAt    DateTime @updatedAt
 
   // Relationships
-  patientProfile   PatientProfile?
-  doctorProfile    DoctorProfile?
-  patientAppointments Appointment[] @relation("PatientAppointments")
-  reportsSubmitted ReportedAccount[] @relation("SubmittedReports")
-  reportsReceived  ReportedAccount[] @relation("ReceivedReports")
-  reviewsGiven     Review[]          @relation("PatientReviews")
+  patientProfile      PatientProfile?
+  doctorProfile       DoctorProfile?
+  patientAppointments Appointment[]     @relation("PatientAppointments")
+  reportsSubmitted    ReportedAccount[] @relation("SubmittedReports")
+  reportsReceived     ReportedAccount[] @relation("ReceivedReports")
+  reviewsGiven        Review[]          @relation("PatientReviews")
 }
 
 model PatientProfile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  phone     String?
-  location  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone       String?
+  location    String?
+  dateOfBirth DateTime?
+  gender      String?
+  bloodGroup  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relationships
+  medicalRecords     MedicalRecord[]
+  prescriptions      Prescription[]
+  doctorAccessGrants DoctorPatientAccess[]
 }
 
 model DoctorProfile {
@@ -54,6 +62,9 @@ model DoctorProfile {
   city               String
   consultationType   String   @default("IN_PERSON") // IN_PERSON, VIDEO, BOTH
 
+  // Conditions treated / areas of clinical expertise
+  treatedConditions  String?  // comma-separated list of conditions
+
   // Real-time availability status (Phase 1 & Phase 3)
   availabilityStatus String    @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
   statusNote         String?   // Optional context (e.g., "In surgery until 3 PM")
@@ -67,15 +78,79 @@ model DoctorProfile {
   updatedAt          DateTime  @updatedAt
 
   // Relationships
-  workingHours WorkingHours[]
-  slots        AppointmentSlot[]
-  appointments Appointment[]     @relation("DoctorAppointments")
-  reviews      Review[]          @relation("DoctorReviews")
+  workingHours        WorkingHours[]
+  slots               AppointmentSlot[]
+  appointments        Appointment[]         @relation("DoctorAppointments")
+  reviews             Review[]              @relation("DoctorReviews")
+  authoredRecords     MedicalRecord[]       @relation("AuthoredRecords")
+  prescriptions       Prescription[]        @relation("DoctorPrescriptions")
+  patientAccessGrants DoctorPatientAccess[] @relation("DoctorAccessGrants")
 
   @@index([specialization])
   @@index([city])
   @@index([verificationStatus])
   @@index([availabilityStatus])
+}
+
+model MedicalRecord {
+  id            String         @id @default(uuid())
+  patientId     String
+  patient       PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String?
+  doctor        DoctorProfile? @relation("AuthoredRecords", fields: [doctorId], references: [id], onDelete: SetNull)
+  title         String
+  recordType    String         // DIAGNOSIS, ALLERGY, MEDICATION, CONSULTATION_NOTE, LAB_REPORT, OTHER
+  description   String
+  diagnosedDate DateTime?
+  severity      String?        // MILD, MODERATE, SEVERE
+  status        String?        @default("ACTIVE") // ACTIVE, RESOLVED, CHRONIC
+  fileUrl       String?
+  addedByRole   String         @default("PATIENT") // PATIENT, DOCTOR
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([recordType])
+}
+
+model Prescription {
+  id             String         @id @default(uuid())
+  patientId      String
+  patient        PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId       String
+  doctor         DoctorProfile  @relation("DoctorPrescriptions", fields: [doctorId], references: [id], onDelete: Cascade)
+  medicationName String
+  dosage         String         // e.g. "500mg"
+  frequency      String         // e.g. "Twice daily after meals"
+  duration       String         // e.g. "7 days", "Ongoing"
+  instructions   String?
+  prescribedDate DateTime       @default(now())
+  status         String         @default("ACTIVE") // ACTIVE, COMPLETED, DISCONTINUED
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model DoctorPatientAccess {
+  id        String         @id @default(uuid())
+  patientId String
+  patient   PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId  String
+  doctor    DoctorProfile  @relation("DoctorAccessGrants", fields: [doctorId], references: [id], onDelete: Cascade)
+  status    String         @default("GRANTED") // GRANTED, REVOKED
+  grantedAt DateTime       @default(now())
+  revokedAt DateTime?
+  reason    String?        // e.g. "Direct consultation grant", "Patient consent"
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@unique([patientId, doctorId])
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
 }
 
 model WorkingHours {

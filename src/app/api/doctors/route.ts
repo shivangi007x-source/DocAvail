@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { DISEASE_SPECIALTY_MAPPINGS } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,16 +14,36 @@ export async function GET(req: NextRequest) {
 
     // Build Prisma where clause
     const whereClause: any = {
-      // Show verified doctors or pending doctors (can indicate status), but let's query approved by default unless requested
       verificationStatus: 'APPROVED',
     };
 
     if (search) {
-      whereClause.OR = [
+      const searchLower = search.toLowerCase();
+      const mappedSpecialties: string[] = [];
+
+      // Check disease/symptom mapping
+      for (const [conditionKey, specs] of Object.entries(DISEASE_SPECIALTY_MAPPINGS)) {
+        if (conditionKey.includes(searchLower) || searchLower.includes(conditionKey)) {
+          for (const spec of specs) {
+            if (!mappedSpecialties.includes(spec)) {
+              mappedSpecialties.push(spec);
+            }
+          }
+        }
+      }
+
+      const orConditions: any[] = [
         { user: { name: { contains: search } } },
         { specialization: { contains: search } },
         { clinicName: { contains: search } },
+        { treatedConditions: { contains: search } },
       ];
+
+      if (mappedSpecialties.length > 0) {
+        orConditions.push({ specialization: { in: mappedSpecialties } });
+      }
+
+      whereClause.OR = orConditions;
     }
 
     if (specialization) {
@@ -68,29 +89,42 @@ export async function GET(req: NextRequest) {
     });
 
     // Map to public DoctorSummary format
-    const formattedDoctors = doctors.map((doc) => ({
-      id: doc.id,
-      userId: doc.user.id,
-      name: doc.user.name,
-      avatarUrl: doc.user.avatarUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop',
-      specialization: doc.specialization,
-      qualification: doc.qualification,
-      experience: doc.experience,
-      clinicName: doc.clinicName,
-      clinicAddress: doc.clinicAddress,
-      city: doc.city,
-      consultationFee: doc.consultationFee,
-      fee: doc.consultationFee,
-      consultationType: doc.consultationType,
-      availabilityStatus: doc.availabilityStatus,
-      statusNote: doc.statusNote,
-      statusUpdatedAt: doc.statusUpdatedAt?.toISOString() || null,
-      verificationStatus: doc.verificationStatus,
-      isVerified: doc.verificationStatus === 'APPROVED',
-      rating: doc.rating,
-      reviewCount: doc.reviewCount,
-      workingHours: doc.workingHours,
-    }));
+    const formattedDoctors = doctors.map((doc) => {
+      const conditionsList = doc.treatedConditions
+        ? doc.treatedConditions
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean)
+        : [];
+
+      return {
+        id: doc.id,
+        userId: doc.user.id,
+        name: doc.user.name,
+        avatarUrl:
+          doc.user.avatarUrl ||
+          'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop',
+        specialization: doc.specialization,
+        qualification: doc.qualification,
+        experience: doc.experience,
+        clinicName: doc.clinicName,
+        clinicAddress: doc.clinicAddress,
+        city: doc.city,
+        consultationFee: doc.consultationFee,
+        fee: doc.consultationFee,
+        consultationType: doc.consultationType,
+        treatedConditions: doc.treatedConditions,
+        conditions: conditionsList,
+        availabilityStatus: doc.availabilityStatus,
+        statusNote: doc.statusNote,
+        statusUpdatedAt: doc.statusUpdatedAt?.toISOString() || null,
+        verificationStatus: doc.verificationStatus,
+        isVerified: doc.verificationStatus === 'APPROVED',
+        rating: doc.rating,
+        reviewCount: doc.reviewCount,
+        workingHours: doc.workingHours,
+      };
+    });
 
     return NextResponse.json({
       doctors: formattedDoctors,

@@ -6,14 +6,15 @@ import { Badge } from './Badge';
 import { Button } from './Button';
 import { StatusIndicator } from './StatusIndicator';
 import { formatCurrency } from '@/lib/utils';
-import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock } from 'lucide-react';
+import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock, Activity } from 'lucide-react';
 
 interface DoctorCardProps {
   doctor: DoctorSummary;
   onBookSlot?: (doctorId: string) => void;
+  onViewProfile?: (doctor: DoctorSummary) => void;
 }
 
-export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) => {
+export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onViewProfile }) => {
   const isVerified = doctor.isVerified || doctor.verificationStatus === 'APPROVED';
   const qualification = doctor.qualification || doctor.qualifications || '';
   const fee = doctor.consultationFee ?? doctor.fee ?? 0;
@@ -31,9 +32,10 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) =>
   };
 
   const timeAgo = formatTimeAgo(doctor.statusUpdatedAt);
+  const conditions = doctor.conditions || (doctor.treatedConditions ? doctor.treatedConditions.split(',').map((s) => s.trim()) : []);
 
   return (
-    <Card className="overflow-hidden flex flex-col justify-between border border-slate-200/90 hover:border-brand-300 group">
+    <Card className="overflow-hidden flex flex-col justify-between border border-slate-200/90 hover:border-brand-300 group transition-all duration-200 shadow-sm hover:shadow-md">
       <div className="p-5 space-y-4">
         {/* Top Bar: Live Status & Verified Badge */}
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -72,6 +74,9 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) =>
             </h3>
             <p className="text-xs font-semibold text-brand-600">{doctor.specialization}</p>
             <p className="text-xs text-slate-500 truncate">{qualification}</p>
+            {doctor.experience ? (
+              <p className="text-[11px] text-slate-400">{doctor.experience} years clinical experience</p>
+            ) : null}
           </div>
         </div>
 
@@ -88,8 +93,33 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) =>
           </div>
         </div>
 
+        {/* Conditions Treated / Areas of Expertise */}
+        {conditions.length > 0 && (
+          <div className="space-y-1.5 pt-1">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <Activity className="h-3 w-3 text-brand-600" />
+              Conditions Treated:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {conditions.slice(0, 4).map((cond, idx) => (
+                <span
+                  key={idx}
+                  className="inline-block px-2 py-0.5 text-[10px] font-medium bg-brand-50/80 text-brand-700 rounded-md border border-brand-100"
+                >
+                  {cond}
+                </span>
+              ))}
+              {conditions.length > 4 && (
+                <span className="inline-block px-1.5 py-0.5 text-[10px] font-medium text-slate-500 bg-slate-100 rounded-md">
+                  +{conditions.length - 4} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Clinic Details */}
-        <div className="space-y-1.5 text-xs text-slate-600 pt-1">
+        <div className="space-y-1.5 text-xs text-slate-600 pt-1 border-t border-slate-100">
           <div className="flex items-center gap-1.5 truncate">
             <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
             <span className="font-medium text-slate-800 truncate">{doctor.clinicName}</span>
@@ -109,11 +139,11 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot }) =>
       </div>
 
       {/* Action Footer */}
-      <div className="px-5 pb-5 pt-0">
+      <div className="px-5 pb-5 pt-0 space-y-2">
         <Button
           onClick={() => onBookSlot?.(doctor.id)}
           disabled={doctor.availabilityStatus === 'UNAVAILABLE'}
-          className="w-full gap-2 text-xs font-semibold"
+          className="w-full gap-2 text-xs font-semibold shadow-sm"
           variant={doctor.availabilityStatus === 'AVAILABLE' ? 'default' : 'secondary'}
         >
           <CalendarCheck className="h-4 w-4" />

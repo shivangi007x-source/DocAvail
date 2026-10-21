@@ -1,32 +1,16 @@
-
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/Card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import {
-  Activity,
-  Lock,
-  Mail,
-  ArrowRight,
-  ShieldCheck,
-  UserCheck,
-  Stethoscope,
-} from 'lucide-react';
+import { Activity, Lock, Mail, ArrowRight, ShieldCheck, UserCheck, Stethoscope } from 'lucide-react';
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
@@ -59,9 +43,8 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(
-          data.error || 'Login failed. Please check your credentials.'
-        );
+        setError(data.error || 'Login failed. Please check your credentials.');
+        setIsLoading(false);
         return;
       }
 
@@ -93,28 +76,22 @@ function LoginForm() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12 bg-slate-50">
       <div className="max-w-md w-full space-y-6">
+        
         {/* Header Icon */}
         <div className="text-center space-y-2">
           <div className="h-12 w-12 rounded-2xl bg-brand-600 flex items-center justify-center text-white mx-auto shadow-lg">
             <Activity className="h-7 w-7 stroke-[2.5]" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-            Sign In to DocAvail
-          </h1>
-          <p className="text-xs text-slate-500">
-            Access real-time doctor availability and appointments
-          </p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Sign In to DocAvail</h1>
+          <p className="text-xs text-slate-500">Access real-time doctor availability and appointments</p>
         </div>
 
         <Card className="shadow-xl border-slate-200">
           <form onSubmit={handleSubmit}>
             <CardHeader>
               <CardTitle className="text-lg">Account Login</CardTitle>
-              <CardDescription>
-                Enter your registered email and password
-              </CardDescription>
+              <CardDescription>Enter your registered email and password</CardDescription>
             </CardHeader>
-
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
@@ -144,22 +121,14 @@ function LoginForm() {
             </CardContent>
 
             <CardFooter className="flex flex-col gap-3">
-              <Button
-                type="submit"
-                variant="default"
-                className="w-full gap-2 shadow-md"
-                isLoading={isLoading}
-              >
+              <Button type="submit" variant="default" className="w-full gap-2 shadow-md" isLoading={isLoading}>
                 Sign In
                 <ArrowRight className="h-4 w-4" />
               </Button>
 
               <div className="text-center text-xs text-slate-500 pt-2">
                 Don&apos;t have an account?{' '}
-                <Link
-                  href="/register"
-                  className="font-semibold text-brand-600 hover:text-brand-700 underline"
-                >
+                <Link href="/register" className="font-semibold text-brand-600 hover:text-brand-700 underline">
                   Register as Patient or Doctor
                 </Link>
               </div>
@@ -172,7 +141,6 @@ function LoginForm() {
           <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">
             ⚡ Demo Quick Fill Credentials (Password: password123)
           </p>
-
           <div className="grid grid-cols-2 gap-2 text-xs">
             <button
               type="button"
@@ -188,27 +156,25 @@ function LoginForm() {
 
             <button
               type="button"
-              onClick={() => fillDemoAccount('dr.jenkins@docavail.com')}
+              onClick={() => fillDemoAccount('dr.vance@docavail.com')}
               className="flex items-center gap-1.5 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-800"
             >
               <Stethoscope className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <div className="truncate">
-                <p className="font-semibold truncate">
-                  Dr. Jenkins (Approved)
-                </p>
-                <p className="text-[10px] text-slate-400">dr.jenkins@...</p>
+                <p className="font-semibold truncate">Dr. Vance (Gen Med)</p>
+                <p className="text-[10px] text-slate-400">dr.vance@...</p>
               </div>
             </button>
 
             <button
               type="button"
-              onClick={() => fillDemoAccount('dr.pending@docavail.com')}
+              onClick={() => fillDemoAccount('dr.jenkins@docavail.com')}
               className="flex items-center gap-1.5 p-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left font-medium text-slate-800"
             >
-              <Stethoscope className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+              <Stethoscope className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <div className="truncate">
-                <p className="font-semibold truncate">Dr. Miller (Pending)</p>
-                <p className="text-[10px] text-slate-400">dr.pending@...</p>
+                <p className="font-semibold truncate">Dr. Jenkins (Cardio)</p>
+                <p className="text-[10px] text-slate-400">dr.jenkins@...</p>
               </div>
             </button>
 
@@ -225,21 +191,8 @@ function LoginForm() {
             </button>
           </div>
         </div>
+
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-[80vh] flex items-center justify-center bg-slate-50">
-          <p className="text-sm text-slate-500">Loading login...</p>
-        </div>
-      }
-    >
-      <LoginForm />
-    </Suspense>
   );
 }

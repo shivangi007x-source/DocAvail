@@ -28,6 +28,7 @@ import {
   Sliders,
   DollarSign,
   UserCheck,
+  Users,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -157,6 +158,12 @@ export default function DoctorDashboard() {
             <Button variant="default" size="sm" className="gap-1.5 text-xs">
               <Stethoscope className="h-3.5 w-3.5" />
               Overview
+            </Button>
+          </Link>
+          <Link href="/doctor/patients">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5 text-brand-600" />
+              Patient Records
             </Button>
           </Link>
           <Link href="/doctor/schedule">

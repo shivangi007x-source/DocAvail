@@ -5,7 +5,20 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Activity, Search, Calendar, User as UserIcon, LogOut, Menu, X, Stethoscope, ShieldCheck } from 'lucide-react';
+import {
+  Activity,
+  Search,
+  Calendar,
+  User as UserIcon,
+  LogOut,
+  Menu,
+  X,
+  Stethoscope,
+  ShieldCheck,
+  FileText,
+  Clock3,
+  Users,
+} from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -39,20 +52,31 @@ export const Navbar: React.FC = () => {
             </Link>
             
             {user?.role === 'PATIENT' && (
-              <Link href="/patient/dashboard" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
-                <Calendar className="h-4 w-4" />
-                Patient Portal
-              </Link>
+              <>
+                <Link href="/patient/dashboard" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
+                  <Calendar className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link href="/patient/medical-history" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                  <FileText className="h-4 w-4" />
+                  My Medical History
+                </Link>
+              </>
             )}
 
             {user?.role === 'DOCTOR' && (
               <>
-                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
                   <Stethoscope className="h-4 w-4" />
-                  Doctor Portal
+                  Dashboard
+                </Link>
+                <Link href="/doctor/patients" className="flex items-center gap-1.5 text-brand-700 font-semibold hover:text-brand-800">
+                  <Users className="h-4 w-4" />
+                  Patient Records
                 </Link>
                 <Link href="/doctor/schedule" className="flex items-center gap-1.5 text-slate-600 font-medium hover:text-brand-700">
-                  Schedule
+                  <Clock3 className="h-4 w-4" />
+                  Working Hours
                 </Link>
               </>
             )}
@@ -128,6 +152,57 @@ export const Navbar: React.FC = () => {
             <Search className="h-4 w-4 text-brand-600" />
             Find Doctors
           </Link>
+
+          {user?.role === 'PATIENT' && (
+            <>
+              <Link
+                href="/patient/dashboard"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Calendar className="h-4 w-4 text-brand-600" />
+                Patient Dashboard
+              </Link>
+              <Link
+                href="/patient/medical-history"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <FileText className="h-4 w-4 text-brand-600" />
+                My Medical History
+              </Link>
+            </>
+          )}
+
+          {user?.role === 'DOCTOR' && (
+            <>
+              <Link
+                href="/doctor/dashboard"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Stethoscope className="h-4 w-4 text-brand-600" />
+                Doctor Dashboard
+              </Link>
+              <Link
+                href="/doctor/patients"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold text-brand-700 hover:bg-brand-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Users className="h-4 w-4 text-brand-600" />
+                Patient Records
+              </Link>
+              <Link
+                href="/doctor/schedule"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Clock3 className="h-4 w-4 text-brand-600" />
+                Working Hours
+              </Link>
+            </>
+          )}
+
           {user ? (
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="px-3 py-2 bg-slate-50 rounded-lg flex items-center justify-between">

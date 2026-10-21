@@ -47,14 +47,19 @@ export default function HomePage() {
   // Real-time SSE stream hook
   const { connectionStatus } = useDoctorAvailabilityStream();
 
-  // Fetch doctors from real database API
+  // Fetch doctors from real database API with disease-based search support
   const { data: doctorsData, isLoading: doctorsLoading } = useQuery<{
     doctors: DoctorSummary[];
     count: number;
   }>({
-    queryKey: ['doctors'],
+    queryKey: ['doctors', searchQuery, selectedSpecialty, selectedCity],
     queryFn: async () => {
-      const res = await fetch('/api/doctors');
+      const params = new URLSearchParams();
+      if (searchQuery) params.set('search', searchQuery);
+      if (selectedSpecialty) params.set('specialization', selectedSpecialty);
+      if (selectedCity) params.set('city', selectedCity);
+
+      const res = await fetch(`/api/doctors?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load doctors');
       return res.json();
     },
@@ -62,22 +67,7 @@ export default function HomePage() {
   });
 
   const doctors = doctorsData?.doctors || [];
-
-  // Filtered doctors for directory / search preview
-  const filteredDoctors = doctors.filter((doc) => {
-    const matchesSearch =
-      !searchQuery ||
-      doc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.specialization.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.clinicName.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesSpecialty =
-      !selectedSpecialty || doc.specialization === selectedSpecialty;
-
-    const matchesCity = !selectedCity || doc.city === selectedCity;
-
-    return matchesSearch && matchesSpecialty && matchesCity;
-  });
+  const filteredDoctors = doctors;
 
   // Online count
   const onlineCount = doctors.filter((d) => d.availabilityStatus === 'AVAILABLE').length;
@@ -156,35 +146,41 @@ export default function HomePage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
-                  <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                    <span className="text-slate-400">Quick Filters:</span>
-                    <Badge
-                      variant="available"
-                      className="cursor-pointer"
-                      dot
-                      onClick={() => setSelectedSpecialty('')}
-                    >
-                      Available Now
-                    </Badge>
-                    <Badge
-                      variant="brand"
-                      className="cursor-pointer"
-                      onClick={() => setSelectedCity('New York, NY')}
-                    >
-                      New York Clinics
-                    </Badge>
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 font-medium">
+                    <span className="text-slate-400">Common Conditions:</span>
+                    {['Diabetes', 'Hypertension', 'Skin Allergy', 'Migraine'].map((cond) => (
+                      <button
+                        key={cond}
+                        type="button"
+                        onClick={() => setSearchQuery(cond)}
+                        className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                          searchQuery === cond
+                            ? 'bg-brand-600 text-white border-brand-600'
+                            : 'bg-slate-50 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border-slate-200'
+                        }`}
+                      >
+                        {cond}
+                      </button>
+                    ))}
                   </div>
-                  <Button
-                    variant="default"
-                    className="w-full sm:w-auto gap-2 px-6 shadow-md"
-                    onClick={() => {
-                      const el = document.getElementById('featured-doctors');
-                      el?.scrollIntoView({ behavior: 'smooth' });
-                    }}
-                  >
-                    <Search className="h-4 w-4" />
-                    Browse Doctors ({filteredDoctors.length})
-                  </Button>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button
+                      variant="default"
+                      className="w-full sm:w-auto gap-2 px-6 shadow-md"
+                      onClick={() => {
+                        const el = document.getElementById('featured-doctors');
+                        el?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      <Search className="h-4 w-4" />
+                      Search Doctors
+                    </Button>
+                    <Link href="/doctors">
+                      <Button variant="outline" className="text-xs">
+                        View All
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
 
