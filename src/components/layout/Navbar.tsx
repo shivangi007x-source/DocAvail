@@ -18,7 +18,6 @@ import {
   FileText,
   Clock3,
   Users,
-  Settings,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -62,9 +61,11 @@ export const Navbar: React.FC = () => {
                   My Medical History
                 </Link>
                 <Link href="/patient/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  <Calendar className="h-4 w-4" />
                   Appointments
                 </Link>
                 <Link href="/patient/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  <UserIcon className="h-4 w-4" />
                   My Profile
                 </Link>
               </>
@@ -80,12 +81,15 @@ export const Navbar: React.FC = () => {
                   Patient Records
                 </Link>
                 <Link href="/doctor/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  <Calendar className="h-4 w-4" />
                   Appointments
                 </Link>
                 <Link href="/doctor/schedule" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  <Clock3 className="h-4 w-4" />
                   Working Hours
                 </Link>
                 <Link href="/doctor/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                  <UserIcon className="h-4 w-4" />
                   My Profile
                 </Link>
               </>
@@ -96,6 +100,19 @@ export const Navbar: React.FC = () => {
                 <ShieldCheck className="h-4 w-4" />
                 Admin Panel
               </Link>
+            )}
+
+            {!user && (
+              <>
+                <Link href="/patient/medical-history" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                  <FileText className="h-4 w-4 text-brand-600" />
+                  Patient History
+                </Link>
+                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                  <Stethoscope className="h-4 w-4 text-brand-600" />
+                  Doctor Portal
+                </Link>
+              </>
             )}
           </nav>
 
@@ -245,6 +262,38 @@ export const Navbar: React.FC = () => {
             </>
           )}
 
+          {user?.role === 'ADMIN' && (
+            <Link
+              href="/admin"
+              className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-semibold text-amber-700 hover:bg-amber-50"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <ShieldCheck className="h-4 w-4 text-amber-600" />
+              Admin Panel
+            </Link>
+          )}
+
+          {!user && (
+            <>
+              <Link
+                href="/patient/medical-history"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <FileText className="h-4 w-4 text-brand-600" />
+                Patient History
+              </Link>
+              <Link
+                href="/doctor/dashboard"
+                className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Stethoscope className="h-4 w-4 text-brand-600" />
+                Doctor Portal
+              </Link>
+            </>
+          )}
+
           {user ? (
             <div className="pt-2 border-t border-slate-100 space-y-2">
               <div className="px-3 py-2 bg-slate-50 rounded-lg flex items-center justify-between">
@@ -252,29 +301,33 @@ export const Navbar: React.FC = () => {
                   <p className="text-xs font-bold text-slate-900">{user.name}</p>
                   <p className="text-[10px] text-slate-500">{user.email}</p>
                 </div>
-                <Badge variant="brand">{user.role}</Badge>
+                <Badge variant="brand" className="text-[10px]">
+                  {user.role}
+                </Badge>
               </div>
               <Button
                 variant="outline"
-                className="w-full text-rose-600 border-rose-200 hover:bg-rose-50"
+                size="sm"
+                className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 gap-2 text-xs"
                 onClick={() => {
-                  logout();
                   setMobileMenuOpen(false);
+                  logout();
                 }}
               >
+                <LogOut className="h-4 w-4" />
                 Sign Out
               </Button>
             </div>
           ) : (
-            <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
               <Link href="/login" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" size="sm" className="w-full text-xs">
                   Sign In
                 </Button>
               </Link>
               <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
-                <Button variant="default" className="w-full">
-                  Register Account
+                <Button variant="default" size="sm" className="w-full text-xs shadow-sm">
+                  Get Started
                 </Button>
               </Link>
             </div>

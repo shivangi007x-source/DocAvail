@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const payload = verifyJwtToken(token);
+    const payload = await verifyJwtToken(token);
     if (!payload || (payload.role !== 'DOCTOR' && payload.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden. Doctor account required.' }, { status: 403 });
     }

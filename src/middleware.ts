@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
+import { verifyJwtToken, TOKEN_COOKIE_NAME } from '@/lib/jwt';
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Protected paths
@@ -22,7 +22,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const payload = verifyJwtToken(token);
+  const payload = await verifyJwtToken(token);
 
   if (!payload) {
     const loginUrl = new URL('/login', req.url);

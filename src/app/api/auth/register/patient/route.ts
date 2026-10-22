@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     });
 
     // Create JWT & HTTP-only Cookie
-    const token = signJwtToken({
+    const token = await signJwtToken({
       userId: user.id,
       email: user.email,
       role: 'PATIENT',

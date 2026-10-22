@@ -11,6 +11,7 @@ interface AuthContextType {
   isLoading: boolean;
   logout: () => Promise<void>;
   refetchUser: () => void;
+  setSession: (userData: UserSession | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,14 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     staleTime: 5 * 60 * 1000,
   });
 
+  const setSession = (userData: UserSession | null) => {
+    queryClient.setQueryData(['auth-me'], userData);
+  };
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
       await fetch('/api/auth/logout', { method: 'POST' });
     },
     onSuccess: () => {
       queryClient.setQueryData(['auth-me'], null);
+      queryClient.clear();
       toast('Logged out', 'You have been logged out of DocAvail.', 'info');
-      router.push('/');
+      router.push('/login');
       router.refresh();
     },
   });
@@ -54,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         logout,
         refetchUser: refetch,
+        setSession,
       }}
     >
       {children}

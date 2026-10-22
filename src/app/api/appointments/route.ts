@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Authentication required. Please sign in as a patient.' }, { status: 401 });
     }
 
-    const payload = verifyJwtToken(token);
+    const payload = await verifyJwtToken(token);
     if (!payload || (payload.role !== 'PATIENT' && payload.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Only patient accounts can schedule appointments.' }, { status: 403 });
     }

@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     }
 
     // Issue JWT token & set cookie
-    const token = signJwtToken({
+    const token = await signJwtToken({
       userId: user.id,
       email: user.email,
       role: user.role as 'PATIENT' | 'DOCTOR' | 'ADMIN',

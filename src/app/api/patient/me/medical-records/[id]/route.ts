@@ -14,7 +14,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const payload = verifyJwtToken(token);
+    const payload = await verifyJwtToken(token);
     if (!payload || (payload.role !== 'PATIENT' && payload.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

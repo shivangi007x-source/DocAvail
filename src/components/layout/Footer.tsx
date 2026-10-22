@@ -39,12 +39,12 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/specialties" className="hover:text-white transition-colors">
-                  Medical Specialties Directory
+                <Link href="/patient/medical-history" className="hover:text-white transition-colors">
+                  My Medical History
                 </Link>
               </li>
               <li>
-                <Link href="/appointments" className="hover:text-white transition-colors">
+                <Link href="/patient/appointments" className="hover:text-white transition-colors">
                   Appointment Tracker
                 </Link>
               </li>
@@ -58,13 +58,18 @@ export const Footer: React.FC = () => {
             </h4>
             <ul className="space-y-2.5 text-xs">
               <li>
-                <Link href="/doctor/register" className="hover:text-white transition-colors">
+                <Link href="/register?role=doctor" className="hover:text-white transition-colors">
                   Join DocAvail Network
                 </Link>
               </li>
               <li>
                 <Link href="/doctor/dashboard" className="hover:text-white transition-colors">
                   Manage Live Availability
+                </Link>
+              </li>
+              <li>
+                <Link href="/doctor/patients" className="hover:text-white transition-colors">
+                  Patient Records Management
                 </Link>
               </li>
               <li>

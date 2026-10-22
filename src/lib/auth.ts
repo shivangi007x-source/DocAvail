@@ -1,29 +1,14 @@
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-import { UserRole } from '@/lib/types';
+import {
+  signJwtToken,
+  verifyJwtToken,
+  TOKEN_COOKIE_NAME,
+  type TokenPayload,
+} from './jwt';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'docavail-secret-key-change-in-production-2026';
-export const TOKEN_COOKIE_NAME = 'docavail_token';
-
-export interface TokenPayload {
-  userId: string;
-  email: string;
-  role: UserRole;
-  name: string;
-}
-
-export function signJwtToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-}
-
-export function verifyJwtToken(token: string): TokenPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload;
-  } catch {
-    return null;
-  }
-}
+export { signJwtToken, verifyJwtToken, TOKEN_COOKIE_NAME };
+export type { TokenPayload };
 
 export async function getSessionUser() {
   const cookieStore = cookies();
@@ -31,7 +16,7 @@ export async function getSessionUser() {
 
   if (!token) return null;
 
-  const payload = verifyJwtToken(token);
+  const payload = await verifyJwtToken(token);
   if (!payload) return null;
 
   const user = await prisma.user.findUnique({

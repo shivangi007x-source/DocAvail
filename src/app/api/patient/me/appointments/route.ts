@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const token = req.cookies.get(TOKEN_COOKIE_NAME)?.value;
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const payload = verifyJwtToken(token);
+    const payload = await verifyJwtToken(token);
     if (!payload || (payload.role !== 'PATIENT' && payload.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Authentication required to book an appointment' }, { status: 401 });
     }
 
-    const payload = verifyJwtToken(token);
+    const payload = await verifyJwtToken(token);
     if (!payload || (payload.role !== 'PATIENT' && payload.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Only registered patient accounts can book appointments' }, { status: 403 });
     }
