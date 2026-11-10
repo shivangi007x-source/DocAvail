@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -48,34 +49,34 @@ model PatientProfile {
 }
 
 model DoctorProfile {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String @id @default(uuid())
+  userId             String @unique
+  user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   specialization     String
   qualification      String
-  experience         Int      @default(0)
+  experience         Int    @default(0)
   licenseNumber      String
-  verificationStatus String   @default("PENDING") // PENDING, APPROVED, REJECTED
-  consultationFee    Float    @default(0.0)
+  verificationStatus String @default("PENDING") // PENDING, APPROVED, REJECTED
+  consultationFee    Float  @default(0.0)
   clinicName         String
   clinicAddress      String
   city               String
-  consultationType   String   @default("IN_PERSON") // IN_PERSON, VIDEO, BOTH
+  consultationType   String @default("IN_PERSON") // IN_PERSON, VIDEO, BOTH
 
   // Conditions treated / areas of clinical expertise
-  treatedConditions  String?  // comma-separated list of conditions
+  treatedConditions String? // comma-separated list of conditions
 
   // Real-time availability status (Phase 1 & Phase 3)
   availabilityStatus String    @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
-  statusNote         String?   // Optional context (e.g., "In surgery until 3 PM")
+  statusNote         String? // Optional context (e.g., "In surgery until 3 PM")
   statusUpdatedAt    DateTime?
-  
-  // Rating aggregate
-  rating             Float     @default(5.0)
-  reviewCount        Int       @default(0)
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  // Rating aggregate
+  rating      Float @default(5.0)
+  reviewCount Int   @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relationships
   workingHours        WorkingHours[]
@@ -99,10 +100,10 @@ model MedicalRecord {
   doctorId      String?
   doctor        DoctorProfile? @relation("AuthoredRecords", fields: [doctorId], references: [id], onDelete: SetNull)
   title         String
-  recordType    String         // DIAGNOSIS, ALLERGY, MEDICATION, CONSULTATION_NOTE, LAB_REPORT, OTHER
+  recordType    String // DIAGNOSIS, ALLERGY, MEDICATION, CONSULTATION_NOTE, LAB_REPORT, OTHER
   description   String
   diagnosedDate DateTime?
-  severity      String?        // MILD, MODERATE, SEVERE
+  severity      String? // MILD, MODERATE, SEVERE
   status        String?        @default("ACTIVE") // ACTIVE, RESOLVED, CHRONIC
   fileUrl       String?
   addedByRole   String         @default("PATIENT") // PATIENT, DOCTOR
@@ -121,9 +122,9 @@ model Prescription {
   doctorId       String
   doctor         DoctorProfile  @relation("DoctorPrescriptions", fields: [doctorId], references: [id], onDelete: Cascade)
   medicationName String
-  dosage         String         // e.g. "500mg"
-  frequency      String         // e.g. "Twice daily after meals"
-  duration       String         // e.g. "7 days", "Ongoing"
+  dosage         String // e.g. "500mg"
+  frequency      String // e.g. "Twice daily after meals"
+  duration       String // e.g. "7 days", "Ongoing"
   instructions   String?
   prescribedDate DateTime       @default(now())
   status         String         @default("ACTIVE") // ACTIVE, COMPLETED, DISCONTINUED
@@ -143,7 +144,7 @@ model DoctorPatientAccess {
   status    String         @default("GRANTED") // GRANTED, REVOKED
   grantedAt DateTime       @default(now())
   revokedAt DateTime?
-  reason    String?        // e.g. "Direct consultation grant", "Patient consent"
+  reason    String? // e.g. "Direct consultation grant", "Patient consent"
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
@@ -157,11 +158,11 @@ model WorkingHours {
   id                  String        @id @default(uuid())
   doctorId            String
   doctor              DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  dayOfWeek           Int           // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  startTime           String        // e.g. "09:00"
-  endTime             String        // e.g. "17:00"
-  breakStart          String?       // e.g. "13:00"
-  breakEnd            String?       // e.g. "14:00"
+  dayOfWeek           Int // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime           String // e.g. "09:00"
+  endTime             String // e.g. "17:00"
+  breakStart          String? // e.g. "13:00"
+  breakEnd            String? // e.g. "14:00"
   slotDurationMinutes Int           @default(30)
   isActive            Boolean       @default(true)
 

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --accept-data-loss && tsx prisma/seed.ts && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
@@ -22,12 +22,13 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.453.0",
     "next": "^14.2.15",
+    "pg": "^8.23.1",
+    "prisma": "^5.21.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io": "^4.8.0",
     "socket.io-client": "^4.8.0",
     "tailwind-merge": "^2.5.4",
-    "prisma": "^5.21.0",
     "tsx": "^4.19.1"
   },
   "devDependencies": {
