@@ -37,3 +37,14 @@ prisma/dev.db*
 .vercel
 
 prisma/sqlite-export.json
+
+# Backups and temporary exports
+/backups/
+backups/
+*.dump
+*.pgpass*
+
+# Local portable tools
+/tools/
+tools/
+

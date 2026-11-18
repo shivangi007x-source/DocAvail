@@ -154,3 +154,14 @@ export interface PatientAuthorizedSummary {
   accessStatus: string;
   accessGrantedAt: string;
 }
+
+export type {
+  CoordinateSourceTier,
+  OperationalFreshnessStatus,
+  EmergencyCapabilityStatus,
+  FacilityVerificationDetails,
+  FacilityMetadataView,
+  FacilitySummaryDTO,
+  AffiliatedDoctorDTO,
+  FacilityDetailDTO,
+} from './facilityVerification';

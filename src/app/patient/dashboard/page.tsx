@@ -18,6 +18,7 @@ import {
   ArrowRight,
   Activity,
   HeartPulse,
+  Building2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,11 +55,17 @@ export default function PatientDashboard() {
             Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span>. Manage your medical records, appointments, and doctor access.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/patient/medical-history">
             <Button variant="outline" className="gap-2 shadow-sm text-xs">
               <FileText className="h-4 w-4 text-brand-600" />
               My Medical History
+            </Button>
+          </Link>
+          <Link href="/facilities">
+            <Button variant="outline" className="gap-2 shadow-sm text-xs">
+              <Building2 className="h-4 w-4 text-brand-600" />
+              Facilities Directory
             </Button>
           </Link>
           <Link href="/doctors">

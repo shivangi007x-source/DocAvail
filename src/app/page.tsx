@@ -180,6 +180,12 @@ export default function HomePage() {
                         View All
                       </Button>
                     </Link>
+                    <Link href="/facilities">
+                      <Button variant="outline" className="text-xs gap-1">
+                        <Building className="h-3.5 w-3.5" />
+                        Facilities
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </div>

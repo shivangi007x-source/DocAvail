@@ -149,3 +149,52 @@ export const FEATURED_SPECIALTIES = [
     description: 'Hypertension, ECG reviews & cardiovascular screening',
   },
 ];
+
+export const JK_DIVISIONS = ['Jammu', 'Kashmir'] as const;
+
+export const JK_DISTRICTS_BY_DIVISION: Record<'Jammu' | 'Kashmir', readonly string[]> = {
+  Jammu: [
+    'Doda',
+    'Jammu',
+    'Kathua',
+    'Kishtwar',
+    'Poonch',
+    'Rajouri',
+    'Ramban',
+    'Reasi',
+    'Samba',
+    'Udhampur',
+  ],
+  Kashmir: [
+    'Anantnag',
+    'Bandipora',
+    'Baramulla',
+    'Budgam',
+    'Ganderbal',
+    'Kulgam',
+    'Kupwara',
+    'Pulwama',
+    'Shopian',
+    'Srinagar',
+  ],
+};
+
+export const JK_ALL_DISTRICTS = [
+  ...JK_DISTRICTS_BY_DIVISION.Jammu,
+  ...JK_DISTRICTS_BY_DIVISION.Kashmir,
+].sort();
+
+export const FACILITY_TYPES = [
+  { value: 'HOSPITAL', label: 'Hospital (District / Tertiary / Teaching)' },
+  { value: 'CHC', label: 'CHC / Sub-District Hospital' },
+  { value: 'PHC', label: 'Primary Health Centre (PHC)' },
+  { value: 'SUB_CENTRE', label: 'Sub-Centre / Health & Wellness Centre' },
+  { value: 'CLINIC', label: 'Clinic / Urban Health Post' },
+  { value: 'DIAGNOSTIC_CENTRE', label: 'Diagnostic Centre' },
+] as const;
+
+export const FACILITY_OPERATIONAL_STATUSES = [
+  { value: 'ACTIVE', label: 'Verified & Unexpired Evidence' },
+  { value: 'UNKNOWN', label: 'Unverified or Expired Evidence' },
+  { value: 'CLOSED', label: 'Closed' },
+] as const;

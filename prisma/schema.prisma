@@ -66,6 +66,12 @@ model DoctorProfile {
   // Conditions treated / areas of clinical expertise
   treatedConditions String? // comma-separated list of conditions
 
+  // Geographic coordinates & district location (Nullable extensions)
+  district  String?
+  division  String? // Jammu, Kashmir
+  latitude  Float?
+  longitude Float?
+
   // Real-time availability status (Phase 1 & Phase 3)
   availabilityStatus String    @default("AVAILABLE") // AVAILABLE, BUSY, UNAVAILABLE
   statusNote         String? // Optional context (e.g., "In surgery until 3 PM")
@@ -79,16 +85,19 @@ model DoctorProfile {
   updatedAt DateTime @updatedAt
 
   // Relationships
-  workingHours        WorkingHours[]
-  slots               AppointmentSlot[]
-  appointments        Appointment[]         @relation("DoctorAppointments")
-  reviews             Review[]              @relation("DoctorReviews")
-  authoredRecords     MedicalRecord[]       @relation("AuthoredRecords")
-  prescriptions       Prescription[]        @relation("DoctorPrescriptions")
-  patientAccessGrants DoctorPatientAccess[] @relation("DoctorAccessGrants")
+  workingHours         WorkingHours[]
+  slots                AppointmentSlot[]
+  appointments         Appointment[]               @relation("DoctorAppointments")
+  reviews              Review[]                    @relation("DoctorReviews")
+  authoredRecords      MedicalRecord[]             @relation("AuthoredRecords")
+  prescriptions        Prescription[]              @relation("DoctorPrescriptions")
+  patientAccessGrants  DoctorPatientAccess[]       @relation("DoctorAccessGrants")
+  facilityAffiliations DoctorFacilityAffiliation[]
 
   @@index([specialization])
   @@index([city])
+  @@index([district])
+  @@index([division])
   @@index([verificationStatus])
   @@index([availabilityStatus])
 }
@@ -222,3 +231,57 @@ model Review {
   comment   String
   createdAt DateTime      @default(now())
 }
+
+model HealthcareFacility {
+  id                  String   @id @default(uuid())
+  name                String
+  facilityType        String   // HOSPITAL, CHC, PHC, SUB_CENTRE, CLINIC, DIAGNOSTIC_CENTRE
+  category            String?  // Public / Government, Private, Charitable
+  district            String   // Anantnag, Bandipora, Baramulla, Budgam, Doda, Ganderbal, Jammu, Kathua, Kishtwar, Kulgam, Kupwara, Poonch, Pulwama, Rajouri, Ramban, Reasi, Samba, Shopian, Srinagar, Udhampur
+  division            String   // Jammu, Kashmir
+  tehsil              String?
+  address             String
+  city                String?
+  pincode             String?
+  latitude            Float?
+  longitude           Float?
+  contactNumber       String?
+  email               String?
+  emergencyServices   Boolean? // true (confirmed), false (confirmed absent), null (unverified)
+  operationalStatus   String   @default("UNKNOWN") // ACTIVE, CLOSED, UNKNOWN
+  operationalVerified Boolean  @default(false)
+  locationVerified    Boolean  @default(false)
+  sourceVerified      Boolean  @default(false)
+  sourceReference     String   // Mandatory provenance reference (e.g. NHM Directory 2024, PM-JAY Empanelled list, OSM Node)
+  sourceAttribution   String   // Mandatory attribution (e.g. "National Health Mission, J&K", "OpenStreetMap contributors")
+  metadata            Json?    // Optional structured JSON metadata for extra verified fields (bed count, specialties)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // Relationships
+  doctorAffiliations DoctorFacilityAffiliation[]
+
+  @@index([district])
+  @@index([division])
+  @@index([facilityType])
+  @@index([operationalStatus])
+}
+
+model DoctorFacilityAffiliation {
+  id               String             @id @default(uuid())
+  doctorId         String
+  doctor           DoctorProfile      @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  facilityId       String
+  facility         HealthcareFacility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  role             String?            // e.g. "Consultant Cardiologist", "Visiting Surgeon"
+  isPrimary        Boolean            @default(false)
+  consultationFee  Float?             // Facility-specific fee override
+  visitingSchedule String?            // e.g. "Mon, Wed, Fri 10:00-14:00"
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([doctorId, facilityId])
+  @@index([doctorId])
+  @@index([facilityId])
+}
+

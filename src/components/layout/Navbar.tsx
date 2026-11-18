@@ -18,6 +18,7 @@ import {
   FileText,
   Clock3,
   Users,
+  Building2,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -49,6 +50,10 @@ export const Navbar: React.FC = () => {
             <Link href="/doctors" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
               <Search className="h-4 w-4" />
               Find Doctors
+            </Link>
+            <Link href="/facilities" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+              <Building2 className="h-4 w-4" />
+              Facilities
             </Link>
             
             {user?.role === 'PATIENT' && (
@@ -178,6 +183,14 @@ export const Navbar: React.FC = () => {
           >
             <Search className="h-4 w-4 text-brand-600" />
             Find Doctors
+          </Link>
+          <Link
+            href="/facilities"
+            className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Building2 className="h-4 w-4 text-brand-600" />
+            Healthcare Facilities
           </Link>
 
           {user?.role === 'PATIENT' && (
