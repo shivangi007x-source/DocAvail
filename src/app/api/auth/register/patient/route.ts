@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { signJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { name, email, password, phone, location } = body;
+
+    if (typeof body.role === 'string' && body.role.trim().toUpperCase() === 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Admin role cannot be selected during public registration.' },
+        { status: 403 }
+      );
+    }
 
     // Validation
     if (!name || !email || !password) {
@@ -49,6 +55,7 @@ export async function POST(req: Request) {
         name: name.trim(),
         passwordHash,
         role: 'PATIENT',
+        approvalStatus: 'PENDING',
         patientProfile: {
           create: {
             phone: phone ? phone.trim() : null,
@@ -61,6 +68,7 @@ export async function POST(req: Request) {
         email: true,
         name: true,
         role: true,
+        approvalStatus: true,
         createdAt: true,
         patientProfile: {
           select: {
@@ -71,25 +79,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create JWT & HTTP-only Cookie
-    const token = await signJwtToken({
-      userId: user.id,
-      email: user.email,
-      role: 'PATIENT',
-      name: user.name,
-    });
-
-    const response = NextResponse.json({ user, message: 'Registration successful' }, { status: 201 });
-
-    response.cookies.set(TOKEN_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    });
-
-    return response;
+    return NextResponse.json(
+      {
+        user,
+        requiresApproval: true,
+        message: 'Registration submitted. Your account is pending administrator approval.',
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Patient Registration Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

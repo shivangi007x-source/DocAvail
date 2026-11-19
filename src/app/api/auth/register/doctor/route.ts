@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { signJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+
+    if (typeof body.role === 'string' && body.role.trim().toUpperCase() === 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Admin role cannot be selected during public registration.' },
+        { status: 403 }
+      );
+    }
     const {
       name,
       email,
@@ -72,6 +78,7 @@ export async function POST(req: Request) {
         name: name.trim(),
         passwordHash,
         role: 'DOCTOR',
+        approvalStatus: 'PENDING',
         doctorProfile: {
           create: {
             specialization: specialization.trim(),
@@ -93,6 +100,7 @@ export async function POST(req: Request) {
         email: true,
         name: true,
         role: true,
+        approvalStatus: true,
         createdAt: true,
         doctorProfile: {
           select: {
@@ -113,28 +121,14 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create JWT & HTTP-only Cookie
-    const token = await signJwtToken({
-      userId: user.id,
-      email: user.email,
-      role: 'DOCTOR',
-      name: user.name,
-    });
-
-    const response = NextResponse.json(
-      { user, message: 'Doctor registration submitted. Profile is pending admin verification.' },
+    return NextResponse.json(
+      {
+        user,
+        requiresApproval: true,
+        message: 'Doctor registration submitted. Your account is pending administrator approval.',
+      },
       { status: 201 }
     );
-
-    response.cookies.set(TOKEN_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: '/',
-    });
-
-    return response;
   } catch (error) {
     console.error('Doctor Registration Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

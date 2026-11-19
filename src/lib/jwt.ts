@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
-import { UserRole } from '@/lib/types';
+import { UserRole, ApprovalStatus } from '@/lib/types';
 
 export const TOKEN_COOKIE_NAME = 'docavail_token';
 
@@ -11,6 +11,7 @@ export interface TokenPayload {
   email: string;
   role: UserRole;
   name: string;
+  approvalStatus?: ApprovalStatus;
 }
 
 /**

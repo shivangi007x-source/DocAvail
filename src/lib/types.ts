@@ -1,6 +1,7 @@
 export type UserRole = 'PATIENT' | 'DOCTOR' | 'ADMIN';
 export type AvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
 export type VerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type ApprovalStatus = VerificationStatus;
 export type ConsultationType = 'IN_PERSON' | 'VIDEO' | 'BOTH';
 export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'COMPLETED' | 'CANCELLED';
 
@@ -9,6 +10,11 @@ export interface UserSession {
   email: string;
   name: string;
   role: UserRole;
+  approvalStatus: ApprovalStatus;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  reviewedAt?: string | null;
+  rejectionReason?: string | null;
   avatarUrl?: string;
   patientProfile?: {
     id?: string;

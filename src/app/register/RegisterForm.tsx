@@ -2,26 +2,30 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
 import { MEDICAL_SPECIALIZATIONS, CITIES } from '@/lib/constants';
-import { User, Stethoscope, Mail, Lock, Phone, MapPin, Building, Award, ShieldAlert, ArrowRight } from 'lucide-react';
+import { User, Stethoscope, Mail, Lock, Phone, MapPin, Building, Award, ShieldAlert, ArrowRight, Clock3, CheckCircle2 } from 'lucide-react';
+
+interface SubmittedRegistration {
+  name: string;
+  email: string;
+  role: 'PATIENT' | 'DOCTOR';
+}
 
 export default function RegisterForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const initialRole = searchParams.get('role')?.toUpperCase() === 'DOCTOR' ? 'DOCTOR' : 'PATIENT';
-  const { setSession, refetchUser } = useAuth();
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<'PATIENT' | 'DOCTOR'>(initialRole);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState<SubmittedRegistration | null>(null);
 
   // Common fields
   const [name, setName] = useState('');
@@ -74,10 +78,12 @@ export default function RegisterForm() {
         return;
       }
 
-      toast('Welcome to DocAvail!', 'Your patient account has been created.', 'success');
-      setSession(data.user);
-      refetchUser();
-      router.push('/patient/dashboard');
+      toast('Registration Submitted', 'Your patient account is saved and awaiting administrator approval.', 'success');
+      setSubmitted({
+        name: data.user?.name || name,
+        email: data.user?.email || email,
+        role: 'PATIENT',
+      });
     } catch {
       setError('An unexpected error occurred.');
     } finally {
@@ -141,18 +147,75 @@ export default function RegisterForm() {
 
       toast(
         'Registration Submitted',
-        'Your profile has been created and submitted for admin verification.',
+        'Your healthcare provider profile has been submitted for admin approval.',
         'success'
       );
-      setSession(data.user);
-      refetchUser();
-      router.push('/doctor/dashboard');
+      setSubmitted({
+        name: data.user?.name || name,
+        email: data.user?.email || email,
+        role: 'DOCTOR',
+      });
     } catch {
       setError('An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <Card className="border-amber-200 bg-white shadow-md">
+        <CardHeader className="space-y-3 text-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">
+            <Clock3 className="h-7 w-7" />
+          </div>
+          <CardTitle className="text-lg text-slate-900">Account Submitted &amp; Pending Approval</CardTitle>
+          <CardDescription className="text-xs text-slate-600">
+            Thank you, <span className="font-semibold text-slate-900">{submitted.name}</span>. Your{' '}
+            <span className="font-semibold text-slate-900">{submitted.role.toLowerCase()}</span> registration has been
+            saved to DocAvail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
+            <div className="flex items-center gap-2 font-semibold">
+              <CheckCircle2 className="h-4 w-4 text-amber-700 shrink-0" />
+              <span>Current Status: PENDING ADMIN APPROVAL</span>
+            </div>
+            <p className="text-amber-800 leading-relaxed">
+              Account email: <span className="font-mono font-semibold">{submitted.email}</span>
+            </p>
+            <p className="text-amber-800 leading-relaxed">
+              Protected {submitted.role === 'DOCTOR' ? 'doctor' : 'patient'} portals remain restricted until a DocAvail
+              administrator reviews and approves your account.
+            </p>
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col sm:flex-row gap-3">
+          <Link href="/login" className="w-full">
+            <Button variant="default" className="w-full gap-2">
+              Go to Sign In
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setSubmitted(null);
+              setName('');
+              setEmail('');
+              setPassword('');
+              setError(null);
+            }}
+          >
+            Register Another Account
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <>
@@ -286,7 +349,7 @@ export default function RegisterForm() {
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs flex items-start gap-2">
                 <ShieldAlert className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <p>
-                  All clinician registrations are reviewed for license authenticity. You will be able to update your live availability immediately upon registration.
+                  All clinician registrations require administrator review and approval. Portal access and public directory listing remain disabled until your account is approved.
                 </p>
               </div>
 

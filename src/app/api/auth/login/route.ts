@@ -52,12 +52,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
+    // Enforce account approval workflow before issuing a session
+    if (user.approvalStatus === 'PENDING') {
+      return NextResponse.json(
+        {
+          error: 'Your account is pending administrator approval. Please check back once an administrator approves your registration.',
+          code: 'ACCOUNT_PENDING',
+          approvalStatus: 'PENDING',
+        },
+        { status: 403 }
+      );
+    }
+
+    if (user.approvalStatus === 'REJECTED') {
+      return NextResponse.json(
+        {
+          error: user.rejectionReason
+            ? `Your account registration was rejected: ${user.rejectionReason}`
+            : 'Your account registration was rejected by an administrator.',
+          code: 'ACCOUNT_REJECTED',
+          approvalStatus: 'REJECTED',
+          rejectionReason: user.rejectionReason,
+          reviewedAt: user.reviewedAt,
+        },
+        { status: 403 }
+      );
+    }
+
     // Issue JWT token & set cookie
     const token = await signJwtToken({
       userId: user.id,
       email: user.email,
       role: user.role as 'PATIENT' | 'DOCTOR' | 'ADMIN',
       name: user.name,
+      approvalStatus: user.approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED',
     });
 
     const userPayload = {
@@ -65,6 +93,11 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       role: user.role,
+      approvalStatus: user.approvalStatus,
+      approvedAt: user.approvedAt,
+      rejectedAt: user.rejectedAt,
+      reviewedAt: user.reviewedAt,
+      rejectionReason: user.rejectionReason,
       avatarUrl: user.avatarUrl,
       patientProfile: user.patientProfile,
       doctorProfile: user.doctorProfile,

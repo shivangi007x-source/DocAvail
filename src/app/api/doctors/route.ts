@@ -12,9 +12,12 @@ export async function GET(req: NextRequest) {
     const city = searchParams.get('city')?.trim() || '';
     const availability = searchParams.get('availability')?.trim() || '';
 
-    // Build Prisma where clause
+    // Build Prisma where clause — only surface verified & approved doctors
     const whereClause: any = {
       verificationStatus: 'APPROVED',
+      user: {
+        approvalStatus: 'APPROVED',
+      },
     };
 
     if (search) {

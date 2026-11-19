@@ -12,14 +12,20 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  role         String   @default("PATIENT") // PATIENT, DOCTOR, ADMIN
-  name         String
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String
+  role            String    @default("PATIENT") // PATIENT, DOCTOR, ADMIN
+  name            String
+  avatarUrl       String?
+  approvalStatus  String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relationships
   patientProfile      PatientProfile?
@@ -28,6 +34,8 @@ model User {
   reportsSubmitted    ReportedAccount[] @relation("SubmittedReports")
   reportsReceived     ReportedAccount[] @relation("ReceivedReports")
   reviewsGiven        Review[]          @relation("PatientReviews")
+
+  @@index([approvalStatus])
 }
 
 model PatientProfile {

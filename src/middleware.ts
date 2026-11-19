@@ -31,6 +31,22 @@ export async function middleware(req: NextRequest) {
   }
 
   const role = payload.role;
+  const approvalStatus = payload.approvalStatus;
+
+  // Enforce approval status in Edge middleware for protected portals
+  if (approvalStatus !== 'APPROVED') {
+    const unauthorizedUrl = new URL('/unauthorized', req.url);
+    if (approvalStatus === 'REJECTED') {
+      unauthorizedUrl.searchParams.set('status', 'rejected');
+    } else if (approvalStatus === 'PENDING') {
+      unauthorizedUrl.searchParams.set('status', 'pending');
+    } else {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.redirect(unauthorizedUrl);
+  }
 
   // Role-based Access Control (RBAC) enforcement
   if (isPatientRoute && role !== 'PATIENT' && role !== 'ADMIN') {

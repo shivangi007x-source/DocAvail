@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
+import { requireAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,15 +9,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const token = req.cookies.get(TOKEN_COOKIE_NAME)?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const payload = await verifyJwtToken(token);
-    if (!payload || (payload.role !== 'DOCTOR' && payload.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Forbidden. Doctor account required.' }, { status: 403 });
-    }
+    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+      forbiddenMessage: 'Forbidden. Doctor account required.',
+    });
+    if (!auth.ok) return auth.response;
+    const payload = { userId: auth.user.id };
 
     const doctorProfile = await prisma.doctorProfile.findUnique({
       where: { userId: payload.userId },

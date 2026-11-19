@@ -96,12 +96,19 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accountStatusInfo, setAccountStatusInfo] = useState<{
+    status: 'PENDING' | 'REJECTED';
+    message: string;
+    rejectionReason?: string | null;
+    reviewedAt?: string | null;
+  } | null>(null);
 
   // Demo Accounts Tab
   const [demoTab, setDemoTab] = useState<'PATIENTS' | 'DOCTORS' | 'ADMIN'>('PATIENTS');
 
   const executeLogin = async (userEmail: string, userPass: string) => {
     setError(null);
+    setAccountStatusInfo(null);
     setIsLoading(true);
 
     try {
@@ -114,7 +121,24 @@ export default function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Login failed. Please check your credentials.');
+        if (data.code === 'ACCOUNT_PENDING' || data.approvalStatus === 'PENDING') {
+          setAccountStatusInfo({
+            status: 'PENDING',
+            message:
+              data.error ||
+              'Your account is awaiting administrator approval. You will be able to sign in once approved.',
+          });
+        } else if (data.code === 'ACCOUNT_REJECTED' || data.approvalStatus === 'REJECTED') {
+          setAccountStatusInfo({
+            status: 'REJECTED',
+            message:
+              data.error || 'Your account registration was rejected by an administrator.',
+            rejectionReason: data.rejectionReason || null,
+            reviewedAt: data.reviewedAt || null,
+          });
+        } else {
+          setError(data.error || 'Login failed. Please check your credentials.');
+        }
         setIsLoading(false);
         return;
       }
@@ -293,26 +317,48 @@ export default function LoginForm() {
           </div>
         )}
 
-        {/* Demo List: Admin */}
+        {/* Admin Notice — Never hardcode admin credentials client-side */}
         {demoTab === 'ADMIN' && (
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-start gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-slate-700 shrink-0 mt-0.5" />
             <div>
-              <p className="font-bold text-xs text-slate-900">DocAvail System Admin</p>
-              <p className="text-[11px] text-slate-500">Full system oversight, doctor verification, and audit review</p>
+              <p className="font-bold text-xs text-slate-900">Administrator Portal Access</p>
+              <p className="text-[11px] text-slate-600 mt-0.5">
+                Admin credentials are not prefilled for security. Use the manual sign-in form below with your
+                provisioned administrator account.
+              </p>
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleInstantDemoLogin('admin@docavail.com')}
-              disabled={isLoading}
-              className="text-[11px] shrink-0 h-7 px-2.5 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-300 font-semibold"
-            >
-              Instant Sign In
-            </Button>
           </div>
         )}
       </Card>
+
+      {/* Account Approval Status Banner */}
+      {accountStatusInfo && (
+        <div
+          className={`p-4 rounded-xl border text-xs space-y-1.5 ${
+            accountStatusInfo.status === 'PENDING'
+              ? 'bg-amber-50 border-amber-200 text-amber-900'
+              : 'bg-rose-50 border-rose-200 text-rose-900'
+          }`}
+        >
+          <p className="font-bold">
+            {accountStatusInfo.status === 'PENDING'
+              ? 'Account Awaiting Administrator Approval'
+              : 'Account Registration Rejected'}
+          </p>
+          <p className="leading-relaxed">{accountStatusInfo.message}</p>
+          {accountStatusInfo.rejectionReason && (
+            <p className="text-[11px] font-medium">
+              Reason: <span className="font-normal">{accountStatusInfo.rejectionReason}</span>
+            </p>
+          )}
+          {accountStatusInfo.reviewedAt && (
+            <p className="text-[11px] opacity-80">
+              Reviewed at: {new Date(accountStatusInfo.reviewedAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Global Error Banner */}
       {error && (

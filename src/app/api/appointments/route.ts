@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { verifyJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
+import { requireAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get(TOKEN_COOKIE_NAME)?.value;
-    if (!token) {
-      return NextResponse.json({ error: 'Authentication required. Please sign in as a patient.' }, { status: 401 });
-    }
-
-    const payload = await verifyJwtToken(token);
-    if (!payload || (payload.role !== 'PATIENT' && payload.role !== 'ADMIN')) {
-      return NextResponse.json({ error: 'Only patient accounts can schedule appointments.' }, { status: 403 });
-    }
+    const auth = await requireAuthUser(req, ['PATIENT', 'ADMIN'], {
+      forbiddenMessage: 'Only approved patient accounts can schedule appointments.',
+    });
+    if (!auth.ok) return auth.response;
+    const payload = { userId: auth.user.id };
 
     const body = await req.json();
     const { doctorId, date, startTime, endTime, consultationType, reasonForVisit, patientNotes } = body;

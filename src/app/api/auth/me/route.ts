@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionUser } from '@/lib/auth';
+import { getSessionUser, TOKEN_COOKIE_NAME } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,9 @@ export async function GET() {
     const user = await getSessionUser();
 
     if (!user) {
-      return NextResponse.json({ user: null }, { status: 200 });
+      const response = NextResponse.json({ user: null }, { status: 200 });
+      response.cookies.set(TOKEN_COOKIE_NAME, '', { maxAge: 0, path: '/' });
+      return response;
     }
 
     return NextResponse.json({ user }, { status: 200 });

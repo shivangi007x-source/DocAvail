@@ -23,6 +23,7 @@ export async function GET(
             name: true,
             email: true,
             avatarUrl: true,
+            approvalStatus: true,
           },
         },
         workingHours: {
@@ -54,6 +55,7 @@ export async function GET(
               name: true,
               email: true,
               avatarUrl: true,
+              approvalStatus: true,
             },
           },
           workingHours: {
@@ -76,7 +78,7 @@ export async function GET(
       });
     }
 
-    if (!doctor) {
+    if (!doctor || doctor.user.approvalStatus !== 'APPROVED' || doctor.verificationStatus !== 'APPROVED') {
       return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
     }
 
