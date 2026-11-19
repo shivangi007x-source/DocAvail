@@ -12,6 +12,7 @@ import { spawn } from 'child_process';
 import * as dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 import { SignJWT } from 'jose';
+import bcrypt from 'bcryptjs';
 
 function ok(cond: unknown, msg: string): asserts cond {
   if (!cond) throw new Error(msg);
@@ -121,9 +122,7 @@ async function main() {
     });
     ok(adminRow, 'Expected an existing ADMIN user on disposable DB for admin tests');
 
-    // Note: in E2E script without knowing plaintext password of existing admin, or we test login via temporary E2E admin password/token
-    // Wait: let's provision a dedicated temporary E2E admin via bcrypt ONLY in disposable DB and delete it in finally!
-    const bcrypt = await import('bcryptjs');
+    // Provision a dedicated temporary E2E admin via bcrypt ONLY in disposable DB and delete it in finally!
     const e2eAdminEmail = `e2e.admin.${ts}@docavail.com`;
     const e2eAdminPass = 'E2eAdminPass#2026!';
     createdEmails.push(e2eAdminEmail);

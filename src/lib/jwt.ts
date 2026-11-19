@@ -23,6 +23,7 @@ export async function signJwtToken(payload: TokenPayload): Promise<string> {
     email: payload.email,
     role: payload.role,
     name: payload.name,
+    ...(payload.approvalStatus ? { approvalStatus: payload.approvalStatus } : {}),
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -43,6 +44,7 @@ export async function verifyJwtToken(token: string): Promise<TokenPayload | null
       email: payload.email as string,
       role: payload.role as UserRole,
       name: payload.name as string,
+      approvalStatus: payload.approvalStatus as ApprovalStatus | undefined,
     };
   } catch {
     return null;
