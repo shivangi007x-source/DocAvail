@@ -277,6 +277,8 @@ export async function getFacilityById(
               user: {
                 select: {
                   name: true,
+                  role: true,
+                  approvalStatus: true,
                 },
               },
             },
@@ -291,7 +293,12 @@ export async function getFacilityById(
 
   const summary = formatFacilitySummary(row, now);
   const affiliatedDoctors: AffiliatedDoctorDTO[] = row.doctorAffiliations
-    .filter((aff) => aff.doctor.verificationStatus === 'APPROVED')
+    .filter(
+      (aff) =>
+        aff.doctor.verificationStatus === 'APPROVED' &&
+        aff.doctor.user.role === 'DOCTOR' &&
+        aff.doctor.user.approvalStatus === 'APPROVED'
+    )
     .map((aff) => ({
       affiliationId: aff.id,
       doctorId: aff.doctor.id,

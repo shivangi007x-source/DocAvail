@@ -66,6 +66,12 @@ interface AdminUserRow {
     clinicName: string;
     clinicAddress: string;
     city: string;
+    district?: string | null;
+    division?: string | null;
+    phone?: string | null;
+    verificationDocName?: string | null;
+    verificationDocMime?: string | null;
+    verificationDocSize?: number | null;
     consultationType: string;
     createdAt: string;
   } | null;
@@ -685,8 +691,34 @@ export default function AdminDashboardPage() {
                     </p>
                     <p className="font-medium text-slate-900">
                       {selectedUser.doctorProfile.clinicName} — {selectedUser.doctorProfile.clinicAddress},{' '}
-                      {selectedUser.doctorProfile.city} ({selectedUser.doctorProfile.consultationType})
+                      {selectedUser.doctorProfile.city}
+                      {selectedUser.doctorProfile.district ? `, District ${selectedUser.doctorProfile.district}` : ''} (
+                      {selectedUser.doctorProfile.consultationType})
                     </p>
+                  </div>
+                  {selectedUser.doctorProfile.phone && (
+                    <div>
+                      <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> Clinician Phone
+                      </p>
+                      <p className="font-medium text-slate-900">{selectedUser.doctorProfile.phone}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-[11px] text-slate-500">Supporting Verification Document</p>
+                    {selectedUser.doctorProfile.verificationDocName ? (
+                      <a
+                        href={`/api/admin/users/${selectedUser.id}/verification-doc`}
+                        className="inline-flex items-center gap-1.5 text-brand-700 font-semibold hover:underline mt-0.5"
+                      >
+                        Download {selectedUser.doctorProfile.verificationDocName}
+                        {selectedUser.doctorProfile.verificationDocSize
+                          ? ` (${Math.max(1, Math.round(selectedUser.doctorProfile.verificationDocSize / 1024))} KB)`
+                          : ''}
+                      </a>
+                    ) : (
+                      <p className="text-slate-400 italic mt-0.5">None uploaded</p>
+                    )}
                   </div>
                 </div>
               </div>

@@ -396,6 +396,14 @@ export default function LoginForm() {
               required
               leftIcon={<Lock className="h-4 w-4" />}
             />
+            <div className="flex items-center justify-end -mt-1">
+              <Link
+                href="/forgot-password"
+                className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-3">
             <Button

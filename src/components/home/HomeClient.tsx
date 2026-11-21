@@ -209,6 +209,21 @@ export function HomeClient({ initialDoctors, initialFacilities }: HomeClientProp
                 Search administrator-approved doctors and public healthcare facilities across all 20 districts of Jammu and Kashmir before you travel.
               </p>
 
+              {/* Prominent Opening Actions: Get Started vs Already Have an Account */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Link href="/get-started">
+                  <Button variant="default" size="lg" className="gap-2 shadow-lg font-bold px-7">
+                    Get Started
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button variant="outline" size="lg" className="gap-2 bg-white font-semibold px-6">
+                    Already Have an Account?
+                  </Button>
+                </Link>
+              </div>
+
               {/* Main Search Filter Box */}
               <div className="bg-white p-4 rounded-2xl shadow-xl border border-slate-200 space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

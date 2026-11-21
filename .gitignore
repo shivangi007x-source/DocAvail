@@ -48,3 +48,6 @@ backups/
 /tools/
 tools/
 
+
+.vercel
+.env*

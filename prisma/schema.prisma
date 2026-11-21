@@ -64,7 +64,12 @@ model DoctorProfile {
   qualification      String
   experience         Int    @default(0)
   licenseNumber      String
-  verificationStatus String @default("PENDING") // PENDING, APPROVED, REJECTED
+  verificationStatus      String  @default("PENDING") // PENDING, APPROVED, REJECTED
+  phone                   String?
+  verificationDocName     String?
+  verificationDocMime     String?
+  verificationDocSize     Int?
+  verificationDocContent  Bytes?
   consultationFee    Float  @default(0.0)
   clinicName         String
   clinicAddress      String
