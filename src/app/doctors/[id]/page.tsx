@@ -169,22 +169,30 @@ export default function DoctorPublicProfilePage() {
           Back to Find Doctors
         </Link>
 
-        <Badge variant="busy" className="border-amber-300 bg-amber-50 text-amber-800 text-[11px] self-start sm:self-auto font-medium">
-          Demonstration Clinician Profile
-        </Badge>
+        {doctor.isVerified && (
+          <Badge variant="verified" className="text-[11px] self-start sm:self-auto font-medium">
+            Admin-Approved Clinician Profile
+          </Badge>
+        )}
       </div>
 
       {/* Main Profile Header Hero Card */}
       <Card className="p-6 sm:p-8 border-slate-200 shadow-sm bg-gradient-to-br from-white via-white to-slate-50/50">
         <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden bg-slate-100 shrink-0 border-2 border-brand-100 shadow-sm">
-            <Image
-              src={doctor.avatarUrl}
-              alt={doctor.name}
-              fill
-              className="object-cover"
-              priority
-            />
+          <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-2xl overflow-hidden bg-brand-50 shrink-0 border-2 border-brand-100 shadow-sm flex items-center justify-center">
+            {doctor.avatarUrl ? (
+              <Image
+                src={doctor.avatarUrl}
+                alt={doctor.name}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <span className="text-3xl font-extrabold text-brand-700">
+                {doctor.name.replace(/^Dr\.?\s+/i, '').charAt(0).toUpperCase() || 'D'}
+              </span>
+            )}
           </div>
 
           <div className="space-y-3 flex-1 min-w-0">

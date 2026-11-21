@@ -14,6 +14,9 @@ export async function GET(req: NextRequest) {
       district: searchParams.get('district'),
       facilityType: searchParams.get('facilityType'),
       operationalStatus: searchParams.get('operationalStatus'),
+      locationVerified: searchParams.get('locationVerified'),
+      lat: searchParams.get('lat'),
+      lng: searchParams.get('lng'),
       page: searchParams.get('page'),
       limit: searchParams.get('limit'),
     });

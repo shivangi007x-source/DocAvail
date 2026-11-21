@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
-import { MEDICAL_SPECIALIZATIONS, CITIES } from '@/lib/constants';
+import { MEDICAL_SPECIALIZATIONS, CITIES, JK_ALL_DISTRICTS } from '@/lib/constants';
 import { User, Stethoscope, Mail, Lock, Phone, MapPin, Building, Award, ShieldAlert, ArrowRight, Clock3, CheckCircle2 } from 'lucide-react';
 
 interface SubmittedRegistration {
@@ -34,6 +34,7 @@ export default function RegisterForm() {
 
   // Patient fields
   const [phone, setPhone] = useState('');
+  const [patientDistrict, setPatientDistrict] = useState<string>('Jammu');
   const [location, setLocation] = useState('');
 
   // Doctor fields
@@ -41,10 +42,11 @@ export default function RegisterForm() {
   const [qualification, setQualification] = useState('');
   const [experience, setExperience] = useState('5');
   const [licenseNumber, setLicenseNumber] = useState('');
-  const [consultationFee, setConsultationFee] = useState('100');
+  const [consultationFee, setConsultationFee] = useState('500');
   const [clinicName, setClinicName] = useState('');
   const [clinicAddress, setClinicAddress] = useState('');
-  const [city, setCity] = useState<string>(CITIES[0]);
+  const [district, setDistrict] = useState<string>('Jammu');
+  const [city, setCity] = useState<string>('Jammu');
   const [consultationType, setConsultationType] = useState('IN_PERSON');
 
   const handlePatientSubmit = async (e: React.FormEvent) => {
@@ -64,10 +66,16 @@ export default function RegisterForm() {
     setIsLoading(true);
 
     try {
+      const formattedLocation = location.trim()
+        ? `${location.trim()}${patientDistrict ? `, District ${patientDistrict}, Jammu and Kashmir, India` : ''}`
+        : patientDistrict
+        ? `District ${patientDistrict}, Jammu and Kashmir, India`
+        : '';
+
       const res = await fetch('/api/auth/register/patient', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, phone, location }),
+        body: JSON.stringify({ name, email, password, phone, location: formattedLocation }),
       });
 
       const data = await res.json();
@@ -133,6 +141,7 @@ export default function RegisterForm() {
           clinicName,
           clinicAddress,
           city,
+          district,
           consultationType,
         }),
       });
@@ -302,19 +311,25 @@ export default function RegisterForm() {
                 <Input
                   label="Phone Number (Optional)"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+91 98765 43210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   leftIcon={<Phone className="h-4 w-4" />}
                 />
-                <Input
-                  label="City / Location"
-                  placeholder="e.g. New York, NY"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  leftIcon={<MapPin className="h-4 w-4" />}
+                <Dropdown
+                  label="District (Jammu & Kashmir)"
+                  options={JK_ALL_DISTRICTS.map((d) => ({ value: d, label: d }))}
+                  value={patientDistrict}
+                  onChange={(e) => setPatientDistrict(e.target.value)}
                 />
               </div>
+              <Input
+                label="City / Town, Area & PIN Code"
+                placeholder="e.g. Gandhi Nagar, Jammu 180004"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                leftIcon={<MapPin className="h-4 w-4" />}
+              />
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
               <Button
@@ -356,7 +371,7 @@ export default function RegisterForm() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="Doctor Name (with title)"
-                  placeholder="Dr. Emily Thorne, MD"
+                  placeholder="Dr. Farooq Ahmad, MD"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -365,7 +380,7 @@ export default function RegisterForm() {
                 <Input
                   label="Official Email"
                   type="email"
-                  placeholder="dr.thorne@clinic.com"
+                  placeholder="dr.ahmad@clinic.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -385,7 +400,7 @@ export default function RegisterForm() {
                 />
                 <Input
                   label="Medical License Number"
-                  placeholder="e.g. MD-NY-89304"
+                  placeholder="e.g. JK-MC-12345"
                   value={licenseNumber}
                   onChange={(e) => setLicenseNumber(e.target.value)}
                   required
@@ -402,7 +417,7 @@ export default function RegisterForm() {
                 />
                 <Input
                   label="Qualifications & Degrees"
-                  placeholder="MBBS, MD, FACC"
+                  placeholder="MBBS, MD, DNB"
                   value={qualification}
                   onChange={(e) => setQualification(e.target.value)}
                   required
@@ -420,27 +435,36 @@ export default function RegisterForm() {
                   required
                 />
                 <Input
-                  label="Consultation Fee ($)"
+                  label="Consultation Fee (₹ INR)"
                   type="number"
                   min="0"
-                  placeholder="e.g. 150"
+                  placeholder="e.g. 500"
                   value={consultationFee}
                   onChange={(e) => setConsultationFee(e.target.value)}
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Input
                   label="Clinic or Hospital Name"
-                  placeholder="Apex Health Center"
+                  placeholder="e.g. Jammu Care Clinic"
                   value={clinicName}
                   onChange={(e) => setClinicName(e.target.value)}
                   required
                   leftIcon={<Building className="h-4 w-4" />}
                 />
                 <Dropdown
-                  label="City"
+                  label="J&K District"
+                  options={JK_ALL_DISTRICTS.map((d) => ({ value: d, label: d }))}
+                  value={district}
+                  onChange={(e) => {
+                    setDistrict(e.target.value);
+                    setCity(e.target.value);
+                  }}
+                />
+                <Dropdown
+                  label="City / Town"
                   options={CITIES.map((c) => ({ value: c, label: c }))}
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
@@ -448,8 +472,8 @@ export default function RegisterForm() {
               </div>
 
               <Input
-                label="Clinic Street Address"
-                placeholder="Suite 400, 100 Main Street"
+                label="Clinic Address, Tehsil & PIN Code (Jammu & Kashmir, India)"
+                placeholder="e.g. Bakshi Nagar, Jammu 180001, Jammu and Kashmir"
                 value={clinicAddress}
                 onChange={(e) => setClinicAddress(e.target.value)}
                 required

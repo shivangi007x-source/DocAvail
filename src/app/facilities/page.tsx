@@ -24,7 +24,10 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Navigation,
+  MapPin,
 } from 'lucide-react';
+import { JKFacilityMap } from '@/components/maps/JKFacilityMap';
 
 interface FacilitiesApiResponse {
   facilities: FacilitySummaryDTO[];
@@ -44,8 +47,12 @@ export default function FacilitiesDirectoryPage() {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [selectedOpStatus, setSelectedOpStatus] = useState('');
+  const [locationVerifiedOnly, setLocationVerifiedOnly] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(6);
+  const [limit, setLimit] = useState(12);
 
   const availableDistricts = useMemo(() => {
     if (selectedDivision === 'Jammu' || selectedDivision === 'Kashmir') {
@@ -73,7 +80,31 @@ export default function FacilitiesDirectoryPage() {
     setSelectedDistrict('');
     setSelectedType('');
     setSelectedOpStatus('');
+    setLocationVerifiedOnly(false);
+    setUserLocation(null);
+    setGeoError(null);
     setPage(1);
+  };
+
+  const handleUseMyLocation = () => {
+    setGeoError(null);
+    if (!navigator.geolocation) {
+      setGeoError('Browser location services are unavailable.');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setPage(1);
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoError('Location permission denied. Showing default J&K directory order.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 8000 }
+    );
   };
 
   const { data, isLoading, isError, error } = useQuery<FacilitiesApiResponse>({
@@ -84,6 +115,9 @@ export default function FacilitiesDirectoryPage() {
       selectedDistrict,
       selectedType,
       selectedOpStatus,
+      locationVerifiedOnly,
+      userLocation?.lat ?? null,
+      userLocation?.lng ?? null,
       page,
       limit,
     ],
@@ -94,23 +128,34 @@ export default function FacilitiesDirectoryPage() {
       if (selectedDistrict) params.set('district', selectedDistrict);
       if (selectedType) params.set('facilityType', selectedType);
       if (selectedOpStatus) params.set('operationalStatus', selectedOpStatus);
+      if (locationVerifiedOnly) params.set('locationVerified', 'true');
+      if (userLocation) {
+        params.set('lat', String(userLocation.lat));
+        params.set('lng', String(userLocation.lng));
+      }
       params.set('page', String(page));
       params.set('limit', String(limit));
 
-      const res = await fetch(`/api/facilities?${params.toString()}`);
+      const res = await fetch(`/api/facilities?${params.toString()}`, { cache: 'no-store' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || 'Failed to load healthcare facilities');
       }
       return res.json();
     },
-    staleTime: 30 * 1000,
+    staleTime: 0,
   });
 
   const facilities = data?.facilities || [];
   const pagination = data?.pagination;
   const hasActiveFilters = Boolean(
-    searchQuery || selectedDivision || selectedDistrict || selectedType || selectedOpStatus
+    searchQuery ||
+      selectedDivision ||
+      selectedDistrict ||
+      selectedType ||
+      selectedOpStatus ||
+      locationVerifiedOnly ||
+      userLocation
   );
 
   return (
@@ -225,7 +270,7 @@ export default function FacilitiesDirectoryPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex flex-wrap items-center gap-2.5 text-slate-600">
             <Filter className="h-3.5 w-3.5 text-brand-600" />
             {isLoading ? (
               <span>Loading facilities...</span>
@@ -235,9 +280,43 @@ export default function FacilitiesDirectoryPage() {
                 <strong className="text-slate-900">{pagination?.total ?? 0}</strong> matching facilities
               </span>
             )}
+
+            <Button
+              type="button"
+              variant={userLocation ? 'default' : 'outline'}
+              size="sm"
+              isLoading={geoLoading}
+              onClick={() => {
+                if (userLocation) {
+                  setUserLocation(null);
+                  setPage(1);
+                } else {
+                  handleUseMyLocation();
+                }
+              }}
+              className="h-7 px-2.5 text-[11px] gap-1"
+            >
+              <Navigation className="h-3 w-3" />
+              {userLocation ? 'Nearby Active (Clear)' : 'Find Nearby (Use My Location)'}
+            </Button>
+
+            <Button
+              type="button"
+              variant={locationVerifiedOnly ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => {
+                setLocationVerifiedOnly((v) => !v);
+                setPage(1);
+              }}
+              className="h-7 px-2.5 text-[11px] gap-1"
+            >
+              <MapPin className="h-3 w-3" />
+              Mapped Coordinates Only
+            </Button>
           </div>
 
           <div className="flex items-center gap-3">
+            {geoError && <span className="text-[11px] text-amber-700">{geoError}</span>}
             <div className="flex items-center gap-1.5">
               <label htmlFor="page-limit" className="text-slate-500">
                 Per page:
@@ -272,6 +351,14 @@ export default function FacilitiesDirectoryPage() {
           </div>
         </div>
       </div>
+
+      {/* Synchronized Jammu & Kashmir Interactive Map */}
+      {!isError && (
+        <JKFacilityMap
+          facilities={facilities}
+          userLocation={userLocation}
+        />
+      )}
 
       {/* Results Area */}
       {isLoading ? (

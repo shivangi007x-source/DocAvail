@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { FacilityDetailDTO } from '@/lib/types';
 import { resolveUiOperationalState } from '@/lib/facilityVerification';
+import { JKFacilityMap } from '@/components/maps/JKFacilityMap';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -340,6 +341,15 @@ export default function FacilityDetailPage() {
                       Google Maps
                     </Button>
                   </a>
+                </div>
+
+                <div className="pt-2">
+                  <JKFacilityMap
+                    facilities={[facility]}
+                    defaultCenter={{ lat: facility.latitude, lng: facility.longitude }}
+                    defaultZoom={13}
+                    heightClassName="h-[240px]"
+                  />
                 </div>
               </div>
             ) : (

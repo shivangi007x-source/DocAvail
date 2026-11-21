@@ -35,6 +35,8 @@ export interface UserSession {
     clinicName: string;
     clinicAddress: string;
     city: string;
+    district?: string | null;
+    division?: string | null;
     consultationType: string;
     treatedConditions?: string | null;
     availabilityStatus: AvailabilityStatus;
@@ -55,6 +57,16 @@ export interface WorkingHoursItem {
   isActive: boolean;
 }
 
+export interface DoctorFacilityAffiliationSummary {
+  id: string;
+  name: string;
+  facilityType: string;
+  district: string;
+  division: string;
+  isPrimary: boolean;
+  role?: string | null;
+}
+
 export interface DoctorSummary {
   id: string;
   userId?: string;
@@ -69,12 +81,14 @@ export interface DoctorSummary {
   clinicName: string;
   clinicAddress: string;
   city: string;
+  district?: string | null;
+  division?: string | null;
   fee: number;
   consultationFee?: number;
   availabilityStatus: AvailabilityStatus;
   statusNote?: string | null;
   statusUpdatedAt?: string | null;
-  avatarUrl: string;
+  avatarUrl: string | null;
   isVerified?: boolean;
   verificationStatus?: VerificationStatus;
   consultationTypes?: string;
@@ -82,6 +96,7 @@ export interface DoctorSummary {
   treatedConditions?: string | null;
   conditions?: string[];
   workingHours?: WorkingHoursItem[];
+  affiliatedFacilities?: DoctorFacilityAffiliationSummary[];
 }
 
 export interface PublicDoctorAvailability {

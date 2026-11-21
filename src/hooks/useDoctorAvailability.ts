@@ -30,9 +30,9 @@ export function useDoctorAvailabilityStream() {
           const payload: PublicDoctorAvailability = JSON.parse(event.data);
           setLastEvent(payload);
 
-          // Update TanStack Query doctors cache optimistically
-          queryClient.setQueryData<{ doctors: DoctorSummary[]; count: number }>(
-            ['doctors'],
+          // Update TanStack Query doctors cache optimistically across active queries
+          queryClient.setQueriesData<{ doctors: DoctorSummary[]; count: number }>(
+            { queryKey: ['doctors'] },
             (old) => {
               if (!old || !old.doctors) return old;
               return {

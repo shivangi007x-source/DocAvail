@@ -676,7 +676,7 @@ export default function AdminDashboardPage() {
                   <div>
                     <p className="text-[11px] text-slate-500">Experience / Fee</p>
                     <p className="font-medium text-slate-900">
-                      {selectedUser.doctorProfile.experience} yrs · ${selectedUser.doctorProfile.consultationFee}
+                      {selectedUser.doctorProfile.experience} yrs · ₹{selectedUser.doctorProfile.consultationFee}
                     </p>
                   </div>
                   <div className="sm:col-span-2">

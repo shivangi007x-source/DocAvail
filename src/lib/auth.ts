@@ -57,6 +57,8 @@ export async function getSessionUser() {
           clinicName: true,
           clinicAddress: true,
           city: true,
+          district: true,
+          division: true,
           consultationType: true,
           treatedConditions: true,
           availabilityStatus: true,

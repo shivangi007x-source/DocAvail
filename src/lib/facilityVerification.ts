@@ -74,6 +74,7 @@ export interface FacilitySummaryDTO {
   } | null;
   verification: FacilityVerificationDetails;
   metadataSummary: FacilityMetadataView;
+  distanceKm?: number | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -34,6 +34,15 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
 
   const timeAgo = formatTimeAgo(doctor.statusUpdatedAt);
   const conditions = doctor.conditions || (doctor.treatedConditions ? doctor.treatedConditions.split(',').map((s) => s.trim()) : []);
+  const primaryFacility = doctor.affiliatedFacilities?.[0];
+  const locationParts = [doctor.clinicAddress, doctor.city, doctor.district].filter(Boolean);
+  const initials = doctor.name
+    .replace(/^Dr\.?\s+/i, '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'DR';
 
   return (
     <Card className="overflow-hidden flex flex-col justify-between border border-slate-200/90 hover:border-brand-300 group transition-all duration-200 shadow-sm hover:shadow-md">
@@ -53,7 +62,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
             {isVerified && (
               <Badge variant="verified" className="gap-1 text-[11px]">
                 <ShieldCheck className="h-3.5 w-3.5 text-blue-600" />
-                Verified
+                Approved
               </Badge>
             )}
           </div>
@@ -63,14 +72,20 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
         <div className="flex gap-4 items-start">
           <Link
             href={`/doctors/${doctor.id}`}
-            className="relative h-16 w-16 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-200 hover:ring-2 hover:ring-brand-500 transition-all"
+            className="relative h-16 w-16 rounded-xl overflow-hidden bg-brand-50 shrink-0 border border-slate-200 hover:ring-2 hover:ring-brand-500 transition-all flex items-center justify-center"
           >
-            <Image
-              src={doctor.avatarUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop'}
-              alt={doctor.name}
-              fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            {doctor.avatarUrl ? (
+              <Image
+                src={doctor.avatarUrl}
+                alt={doctor.name}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+            ) : (
+              <span className="text-base font-extrabold text-brand-700" aria-label={doctor.name}>
+                {initials}
+              </span>
+            )}
           </Link>
           <div className="space-y-1 min-w-0">
             <Link
@@ -80,8 +95,8 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
               {doctor.name}
             </Link>
             <p className="text-xs font-semibold text-brand-600">{doctor.specialization}</p>
-            <p className="text-xs text-slate-500 truncate">{qualification}</p>
-            {doctor.experience ? (
+            {qualification && <p className="text-xs text-slate-500 truncate">{qualification}</p>}
+            {doctor.experience != null && doctor.experience > 0 ? (
               <p className="text-[11px] text-slate-400">{doctor.experience} years clinical experience</p>
             ) : null}
           </div>
@@ -90,13 +105,19 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
         {/* Rating & Fee */}
         <div className="flex items-center justify-between bg-slate-50 p-2.5 rounded-lg text-xs">
           <div className="flex items-center gap-1 font-semibold text-slate-800">
-            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-            <span>{doctor.rating}</span>
-            <span className="text-slate-400 font-normal">({doctor.reviewCount} reviews)</span>
+            {doctor.reviewCount > 0 ? (
+              <>
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <span>{doctor.rating}</span>
+                <span className="text-slate-400 font-normal">({doctor.reviewCount} reviews)</span>
+              </>
+            ) : (
+              <span className="text-slate-500 font-normal">Verified Clinician</span>
+            )}
           </div>
           <div className="font-bold text-slate-900">
             <span className="text-slate-400 font-normal mr-1">Fee:</span>
-            {formatCurrency(fee)}
+            {fee > 0 ? formatCurrency(fee) : 'Not listed'}
           </div>
         </div>
 
@@ -125,16 +146,28 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
           </div>
         )}
 
-        {/* Clinic Details */}
+        {/* Clinic & Affiliated Facility Details */}
         <div className="space-y-1.5 text-xs text-slate-600 pt-1 border-t border-slate-100">
-          <div className="flex items-center gap-1.5 truncate">
-            <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            <span className="font-medium text-slate-800 truncate">{doctor.clinicName}</span>
-          </div>
-          <div className="flex items-center gap-1.5 truncate">
-            <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-            <span className="truncate">{doctor.clinicAddress}, {doctor.city}</span>
-          </div>
+          {primaryFacility ? (
+            <div className="flex items-center gap-1.5 truncate">
+              <Building2 className="h-3.5 w-3.5 text-brand-600 shrink-0" />
+              <span className="font-medium text-slate-800 truncate">
+                {primaryFacility.name}
+                {primaryFacility.district ? ` (${primaryFacility.district})` : ''}
+              </span>
+            </div>
+          ) : doctor.clinicName ? (
+            <div className="flex items-center gap-1.5 truncate">
+              <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span className="font-medium text-slate-800 truncate">{doctor.clinicName}</span>
+            </div>
+          ) : null}
+          {locationParts.length > 0 && (
+            <div className="flex items-center gap-1.5 truncate">
+              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span className="truncate">{locationParts.join(', ')}</span>
+            </div>
+          )}
         </div>
 
         {/* Doctor Status Note if available */}

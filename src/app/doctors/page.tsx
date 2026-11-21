@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useDoctorAvailabilityStream } from '@/hooks/useDoctorAvailability';
 import {
   MEDICAL_SPECIALIZATIONS,
-  CITIES,
+  JK_ALL_DISTRICTS,
   POPULAR_SEARCH_CONDITIONS,
 } from '@/lib/constants';
 import {
@@ -39,7 +39,7 @@ export default function FindDoctorPage() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState<'ALL' | 'AVAILABLE'>('ALL');
 
   // SSE real-time sync hook
@@ -55,19 +55,22 @@ export default function FindDoctorPage() {
     doctors: DoctorSummary[];
     count: number;
   }>({
-    queryKey: ['doctors', searchQuery, selectedSpecialty, selectedCity, availabilityFilter],
+    queryKey: ['doctors', searchQuery, selectedSpecialty, selectedDistrict, availabilityFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.set('search', searchQuery);
       if (selectedSpecialty) params.set('specialization', selectedSpecialty);
-      if (selectedCity) params.set('city', selectedCity);
+      if (selectedDistrict) params.set('district', selectedDistrict);
       if (availabilityFilter === 'AVAILABLE') params.set('availability', 'AVAILABLE');
 
-      const res = await fetch(`/api/doctors?${params.toString()}`);
+      const res = await fetch(`/api/doctors?${params.toString()}`, {
+        cache: 'no-store',
+      });
       if (!res.ok) throw new Error('Failed to load doctors');
       return res.json();
     },
-    staleTime: 30 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const doctors = doctorsData?.doctors || [];
@@ -84,7 +87,7 @@ export default function FindDoctorPage() {
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedSpecialty('');
-    setSelectedCity('');
+    setSelectedDistrict('');
     setAvailabilityFilter('ALL');
   };
 
@@ -92,13 +95,13 @@ export default function FindDoctorPage() {
     if (!selectedDoctor) return;
 
     if (!user) {
-      toast('Sign In Required', 'Please sign in with a patient demo account to schedule an appointment.', 'error');
+      toast('Sign In Required', 'Please sign in with an approved patient account to schedule an appointment.', 'error');
       router.push(`/login?redirect=/doctors`);
       return;
     }
 
     if (user.role === 'DOCTOR') {
-      toast('Account Notice', 'Doctor accounts cannot schedule patient appointments. Please use a patient demo account.', 'info');
+      toast('Account Notice', 'Doctor accounts cannot schedule patient appointments. Please use a patient account.', 'info');
       return;
     }
 
@@ -192,16 +195,16 @@ export default function FindDoctorPage() {
             />
           </div>
 
-          {/* City Dropdown */}
+          {/* J&K District Dropdown */}
           <div className="md:col-span-2">
             <Dropdown
               options={[
-                { value: '', label: 'All Locations' },
-                ...CITIES.map((c) => ({ value: c, label: c })),
+                { value: '', label: 'All J&K Districts' },
+                ...JK_ALL_DISTRICTS.map((d) => ({ value: d, label: d })),
               ]}
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              placeholder="Location"
+              value={selectedDistrict}
+              onChange={(e) => setSelectedDistrict(e.target.value)}
+              placeholder="District"
             />
           </div>
 
@@ -256,7 +259,7 @@ export default function FindDoctorPage() {
               </button>
             );
           })}
-          {(searchQuery || selectedSpecialty || selectedCity || availabilityFilter !== 'ALL') && (
+          {(searchQuery || selectedSpecialty || selectedDistrict || availabilityFilter !== 'ALL') && (
             <button
               type="button"
               onClick={handleResetFilters}
@@ -317,7 +320,7 @@ export default function FindDoctorPage() {
           </div>
           <h3 className="text-lg font-bold text-slate-900">No Doctors Match Your Search</h3>
           <p className="text-xs text-slate-500 max-w-md mx-auto">
-            We couldn&apos;t find verified doctors matching &ldquo;{searchQuery || selectedSpecialty || selectedCity}&rdquo;. Try searching for general terms like &ldquo;Diabetes&rdquo;, &ldquo;Cardiology&rdquo;, or &ldquo;Skin Allergy&rdquo;.
+            We couldn&apos;t find verified doctors matching &ldquo;{searchQuery || selectedSpecialty || selectedDistrict}&rdquo;. Try searching for general terms like &ldquo;Diabetes&rdquo;, &ldquo;Cardiology&rdquo;, or &ldquo;Skin Allergy&rdquo;.
           </p>
           <Button variant="outline" size="sm" onClick={handleResetFilters} className="gap-1.5 text-xs">
             <RotateCcw className="h-3.5 w-3.5" />

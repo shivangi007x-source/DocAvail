@@ -21,8 +21,8 @@ export async function GET(
           select: {
             id: true,
             name: true,
-            email: true,
             avatarUrl: true,
+            role: true,
             approvalStatus: true,
           },
         },
@@ -53,8 +53,8 @@ export async function GET(
             select: {
               id: true,
               name: true,
-              email: true,
               avatarUrl: true,
+              role: true,
               approvalStatus: true,
             },
           },
@@ -78,7 +78,12 @@ export async function GET(
       });
     }
 
-    if (!doctor || doctor.user.approvalStatus !== 'APPROVED' || doctor.verificationStatus !== 'APPROVED') {
+    if (
+      !doctor ||
+      doctor.user.role !== 'DOCTOR' ||
+      doctor.user.approvalStatus !== 'APPROVED' ||
+      doctor.verificationStatus === 'REJECTED'
+    ) {
       return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
     }
 
@@ -93,10 +98,7 @@ export async function GET(
       id: doctor.id,
       userId: doctor.user.id,
       name: doctor.user.name,
-      email: doctor.user.email,
-      avatarUrl:
-        doctor.user.avatarUrl ||
-        'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop',
+      avatarUrl: doctor.user.avatarUrl || null,
       specialization: doctor.specialization,
       qualification: doctor.qualification,
       experience: doctor.experience,

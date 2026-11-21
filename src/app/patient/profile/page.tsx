@@ -127,15 +127,15 @@ export default function PatientProfilePage() {
 
             <Input
               label="Phone Number"
-              placeholder="+1 555-0192"
+              placeholder="+91 98765 43210"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               leftIcon={<Phone className="h-4 w-4 text-slate-400" />}
             />
 
             <Input
-              label="Location / City"
-              placeholder="e.g. New York, NY"
+              label="District / City, PIN Code (Jammu & Kashmir, India)"
+              placeholder="e.g. Rajbagh, Srinagar 190008, District Srinagar"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               leftIcon={<MapPin className="h-4 w-4 text-slate-400" />}

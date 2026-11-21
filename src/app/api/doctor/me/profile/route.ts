@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
+import { getDivisionForDistrict } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,10 +50,24 @@ export async function PATCH(req: NextRequest) {
       clinicName,
       clinicAddress,
       city,
+      district,
       consultationType,
       experience,
       qualification,
     } = body;
+
+    const cleanDistrict =
+      district !== undefined
+        ? typeof district === 'string' && district.trim()
+          ? district.trim()
+          : null
+        : undefined;
+    const derivedDivision =
+      cleanDistrict !== undefined
+        ? cleanDistrict
+          ? getDivisionForDistrict(cleanDistrict)
+          : null
+        : undefined;
 
     if (name) {
       await prisma.user.update({
@@ -69,6 +84,8 @@ export async function PATCH(req: NextRequest) {
         clinicName: clinicName !== undefined ? clinicName.trim() : undefined,
         clinicAddress: clinicAddress !== undefined ? clinicAddress.trim() : undefined,
         city: city !== undefined ? city.trim() : undefined,
+        district: cleanDistrict,
+        division: derivedDivision,
         consultationType: consultationType !== undefined ? consultationType : undefined,
         experience: experience !== undefined ? parseInt(experience, 10) : undefined,
         qualification: qualification !== undefined ? qualification.trim() : undefined,

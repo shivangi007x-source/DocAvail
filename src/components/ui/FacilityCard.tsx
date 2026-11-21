@@ -52,6 +52,11 @@ export const FacilityCard: React.FC<FacilityCardProps> = ({ facility }) => {
                 {facility.category}
               </span>
             )}
+            {facility.distanceKm !== undefined && facility.distanceKm !== null && (
+              <Badge variant="available" className="text-[10px]">
+                {facility.distanceKm} km away
+              </Badge>
+            )}
           </div>
           {verification.sourceVerified ? (
             <Badge variant="verified" className="gap-1 text-[11px]">

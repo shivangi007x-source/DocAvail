@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { getDivisionForDistrict } from '@/lib/constants';
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,7 @@ export async function POST(req: Request) {
       clinicName,
       clinicAddress,
       city,
+      district,
       consultationType,
     } = body;
 
@@ -72,6 +74,9 @@ export async function POST(req: Request) {
     // Hash password & create Doctor with PENDING verification status
     const passwordHash = await bcrypt.hash(password, 10);
 
+    const cleanDistrict = typeof district === 'string' && district.trim() ? district.trim() : null;
+    const derivedDivision = cleanDistrict ? getDivisionForDistrict(cleanDistrict) : null;
+
     const user = await prisma.user.create({
       data: {
         email: email.toLowerCase().trim(),
@@ -90,6 +95,8 @@ export async function POST(req: Request) {
             clinicName: clinicName.trim(),
             clinicAddress: clinicAddress.trim(),
             city: city.trim(),
+            district: cleanDistrict,
+            division: derivedDivision,
             consultationType: consultationType || 'IN_PERSON',
             availabilityStatus: 'AVAILABLE',
           },

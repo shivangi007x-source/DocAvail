@@ -16,6 +16,32 @@ export const MEDICAL_SPECIALIZATIONS = [
 ] as const;
 
 export const CITIES = [
+  'Jammu',
+  'Srinagar',
+  'Anantnag',
+  'Baramulla',
+  'Kathua',
+  'Udhampur',
+  'Pulwama',
+  'Ganderbal',
+  'Budgam',
+  'Kupwara',
+  'Rajouri',
+  'Poonch',
+  'Doda',
+  'Ramban',
+  'Reasi',
+  'Samba',
+  'Kishtwar',
+  'Bandipora',
+  'Kulgam',
+  'Shopian',
+  'R.S. Pura',
+  'Akhnoor',
+  'Tangmarg',
+] as const;
+
+export const LEGACY_FOREIGN_DEMO_CITIES = [
   'New York, NY',
   'Chicago, IL',
   'Los Angeles, CA',
@@ -26,6 +52,16 @@ export const CITIES = [
   'San Diego, CA',
   'Dallas, TX',
 ] as const;
+
+export const JK_MAP_CONFIG = {
+  centerLat: 33.48,
+  centerLng: 75.02,
+  defaultZoom: 8,
+  minLat: 32.15,
+  maxLat: 34.85,
+  minLng: 73.7,
+  maxLng: 76.85,
+} as const;
 
 export const POPULAR_SEARCH_CONDITIONS = [
   'Diabetes',
@@ -183,6 +219,18 @@ export const JK_ALL_DISTRICTS = [
   ...JK_DISTRICTS_BY_DIVISION.Jammu,
   ...JK_DISTRICTS_BY_DIVISION.Kashmir,
 ].sort();
+
+export function getDivisionForDistrict(district?: string | null): 'Jammu' | 'Kashmir' | null {
+  if (!district) return null;
+  const trimmed = district.trim().toLowerCase();
+  if (JK_DISTRICTS_BY_DIVISION.Jammu.some((d) => d.toLowerCase() === trimmed)) {
+    return 'Jammu';
+  }
+  if (JK_DISTRICTS_BY_DIVISION.Kashmir.some((d) => d.toLowerCase() === trimmed)) {
+    return 'Kashmir';
+  }
+  return null;
+}
 
 export const FACILITY_TYPES = [
   { value: 'HOSPITAL', label: 'Hospital (District / Tertiary / Teaching)' },

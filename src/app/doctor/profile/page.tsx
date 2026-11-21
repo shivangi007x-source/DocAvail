@@ -9,12 +9,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { useToast } from '@/components/ui/Toast';
+import { JK_ALL_DISTRICTS } from '@/lib/constants';
 import {
   Stethoscope,
   ShieldCheck,
   Building2,
   MapPin,
-  DollarSign,
+  IndianRupee,
   Activity,
   CheckCircle2,
   Sparkles,
@@ -29,6 +30,7 @@ export default function DoctorProfilePage() {
   const [consultationFee, setConsultationFee] = useState('');
   const [clinicName, setClinicName] = useState('');
   const [clinicAddress, setClinicAddress] = useState('');
+  const [district, setDistrict] = useState('');
   const [city, setCity] = useState('');
   const [consultationType, setConsultationType] = useState('IN_PERSON');
   const [qualification, setQualification] = useState('');
@@ -51,6 +53,7 @@ export default function DoctorProfilePage() {
       setConsultationFee(String(p.consultationFee ?? 0));
       setClinicName(p.clinicName || '');
       setClinicAddress(p.clinicAddress || '');
+      setDistrict(p.district || '');
       setCity(p.city || '');
       setConsultationType(p.consultationType || 'IN_PERSON');
       setQualification(p.qualification || '');
@@ -62,6 +65,7 @@ export default function DoctorProfilePage() {
       setConsultationFee(String(p.consultationFee ?? 0));
       setClinicName(p.clinicName || '');
       setClinicAddress(p.clinicAddress || '');
+      setDistrict(p.district || '');
       setCity(p.city || '');
       setConsultationType(p.consultationType || 'IN_PERSON');
       setQualification(p.qualification || '');
@@ -97,6 +101,7 @@ export default function DoctorProfilePage() {
       consultationFee,
       clinicName,
       clinicAddress,
+      district,
       city,
       consultationType,
       qualification,
@@ -161,7 +166,7 @@ export default function DoctorProfilePage() {
 
             <Input
               label="Qualifications & Degrees"
-              placeholder="e.g. MBBS, MD, FACC (Harvard)"
+              placeholder="e.g. MBBS, MD, DNB"
               value={qualification}
               onChange={(e) => setQualification(e.target.value)}
               required
@@ -211,16 +216,30 @@ export default function DoctorProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Clinic / Hospital Name"
-              placeholder="e.g. Apex Medical Center"
+              placeholder="e.g. Jammu Care Clinic / Hospital"
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
               leftIcon={<Building2 className="h-4 w-4 text-slate-400" />}
               required
             />
 
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                District (Jammu &amp; Kashmir)
+              </label>
+              <Dropdown
+                options={[
+                  { value: '', label: 'Select J&K District' },
+                  ...JK_ALL_DISTRICTS.map((d) => ({ value: d, label: d })),
+                ]}
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+              />
+            </div>
+
             <Input
-              label="City / Region"
-              placeholder="e.g. New York, NY"
+              label="City / Town (Jammu & Kashmir, India)"
+              placeholder="e.g. Jammu / Srinagar / Kathua"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               leftIcon={<MapPin className="h-4 w-4 text-slate-400" />}
@@ -228,21 +247,21 @@ export default function DoctorProfilePage() {
             />
 
             <Input
-              label="Clinic Street Address"
-              placeholder="e.g. 450 Lexington Ave, Suite 300"
+              label="Clinic Street Address & PIN Code"
+              placeholder="e.g. Bakshi Nagar, Jammu 180001"
               value={clinicAddress}
               onChange={(e) => setClinicAddress(e.target.value)}
               required
             />
 
             <Input
-              label="Standard Consultation Fee ($)"
+              label="Standard Consultation Fee (₹ INR)"
               type="number"
-              step="5"
-              placeholder="100.00"
+              step="50"
+              placeholder="500"
               value={consultationFee}
               onChange={(e) => setConsultationFee(e.target.value)}
-              leftIcon={<DollarSign className="h-4 w-4 text-slate-400" />}
+              leftIcon={<IndianRupee className="h-4 w-4 text-slate-400" />}
               required
             />
           </div>

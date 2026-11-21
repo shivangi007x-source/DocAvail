@@ -37,8 +37,31 @@ export interface FacilityQueryParams {
   district?: string | null;
   facilityType?: string | null;
   operationalStatus?: string | null;
+  locationVerified?: string | boolean | null;
+  lat?: string | number | null;
+  lng?: string | number | null;
   page?: string | number | null;
   limit?: string | number | null;
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
+}
+
+function parseOptionalCoord(val: string | number | null | undefined, min: number, max: number, label: string): number | null {
+  if (val === undefined || val === null || val === '') return null;
+  const n = typeof val === 'number' ? val : Number.parseFloat(String(val));
+  if (!Number.isFinite(n) || n < min || n > max) {
+    throw new FacilityQueryValidationError(`Invalid ${label} coordinate.`);
+  }
+  return n;
 }
 
 export interface FacilityListResult {
@@ -80,6 +103,16 @@ export async function queryFacilities(
   const rawDistrict = (params.district || '').trim().slice(0, 80);
   const rawType = (params.facilityType || '').trim().toUpperCase();
   const rawOpStatus = (params.operationalStatus || '').trim().toUpperCase();
+  const locationVerifiedOnly =
+    params.locationVerified === true ||
+    String(params.locationVerified || '').trim().toLowerCase() === 'true';
+
+  const userLat = parseOptionalCoord(params.lat, -90, 90, 'lat');
+  const userLng = parseOptionalCoord(params.lng, -180, 180, 'lng');
+  if ((userLat !== null && userLng === null) || (userLat === null && userLng !== null)) {
+    throw new FacilityQueryValidationError('Both lat and lng are required for nearby facility sorting.');
+  }
+  const hasUserLocation = userLat !== null && userLng !== null;
 
   let divisionFilter: 'Jammu' | 'Kashmir' | undefined;
   if (rawDivision) {
@@ -128,6 +161,11 @@ export async function queryFacilities(
   if (typeFilter) {
     whereClause.facilityType = typeFilter;
   }
+  if (locationVerifiedOnly) {
+    whereClause.locationVerified = true;
+    whereClause.latitude = { not: null };
+    whereClause.longitude = { not: null };
+  }
   if (search) {
     whereClause.OR = [
       { name: { contains: search, mode: 'insensitive' } },
@@ -143,8 +181,8 @@ export async function queryFacilities(
   let facilities: FacilitySummaryDTO[] = [];
   let total = 0;
 
-  if (!opStatusFilter) {
-    // Fast database-level pagination when not filtering by dynamically expiry-checked status
+  if (!opStatusFilter && !hasUserLocation) {
+    // Fast database-level pagination when not filtering by expiry-checked status or sorting by GPS distance
     const [countResult, rows] = await Promise.all([
       prisma.healthcareFacility.count({ where: whereClause }),
       prisma.healthcareFacility.findMany({
@@ -157,14 +195,32 @@ export async function queryFacilities(
     total = countResult;
     facilities = rows.map((row) => formatFacilitySummary(row, now));
   } else {
-    // Enforce operational evidence expiry accurately before filtering & paginating
     const matchingRows = await prisma.healthcareFacility.findMany({
       where: whereClause,
       orderBy,
     });
-    const evaluated = matchingRows
-      .map((row) => formatFacilitySummary(row, now))
-      .filter((item) => item.verification.effectiveOperationalStatus === opStatusFilter);
+    let evaluated = matchingRows.map((row) => formatFacilitySummary(row, now));
+    if (opStatusFilter) {
+      evaluated = evaluated.filter(
+        (item) => item.verification.effectiveOperationalStatus === opStatusFilter
+      );
+    }
+    if (hasUserLocation && userLat !== null && userLng !== null) {
+      evaluated = evaluated
+        .map((item) => ({
+          ...item,
+          distanceKm:
+            item.latitude !== null && item.longitude !== null
+              ? haversineKm(userLat, userLng, item.latitude, item.longitude)
+              : null,
+        }))
+        .sort((a, b) => {
+          if (a.distanceKm === null && b.distanceKm === null) return a.name.localeCompare(b.name);
+          if (a.distanceKm === null) return 1;
+          if (b.distanceKm === null) return -1;
+          return a.distanceKm - b.distanceKm;
+        });
+    }
 
     total = evaluated.length;
     const startIdx = (page - 1) * limit;
