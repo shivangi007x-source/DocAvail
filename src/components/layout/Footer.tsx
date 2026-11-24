@@ -44,12 +44,12 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/patient/medical-history" className="hover:text-white transition-colors">
+                <Link href="/patient/medical-history" prefetch={false} className="hover:text-white transition-colors">
                   My Medical History
                 </Link>
               </li>
               <li>
-                <Link href="/patient/appointments" className="hover:text-white transition-colors">
+                <Link href="/patient/appointments" prefetch={false} className="hover:text-white transition-colors">
                   Appointment Tracker
                 </Link>
               </li>
@@ -68,17 +68,17 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/doctor/dashboard" className="hover:text-white transition-colors">
+                <Link href="/doctor/dashboard" prefetch={false} className="hover:text-white transition-colors">
                   Manage Live Availability
                 </Link>
               </li>
               <li>
-                <Link href="/doctor/patients" className="hover:text-white transition-colors">
+                <Link href="/doctor/patients" prefetch={false} className="hover:text-white transition-colors">
                   Patient Records Management
                 </Link>
               </li>
               <li>
-                <Link href="/doctor/schedule" className="hover:text-white transition-colors">
+                <Link href="/doctor/schedule" prefetch={false} className="hover:text-white transition-colors">
                   Working Hours & Slots Setup
                 </Link>
               </li>

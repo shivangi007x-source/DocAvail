@@ -8,17 +8,15 @@ import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
-import { Modal } from '@/components/ui/Modal';
 import { DoctorCard } from '@/components/ui/DoctorCard';
 import { FacilityCard } from '@/components/ui/FacilityCard';
 import { JKFacilityMap } from '@/components/maps/JKFacilityMap';
-import { SlotPicker } from '@/components/ui/SlotPicker';
+import { BookAppointmentModal } from '@/components/appointments/BookAppointmentModal';
 import { useToast } from '@/components/ui/Toast';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { useDoctorAvailabilityStream } from '@/hooks/useDoctorAvailability';
 import { useQuery } from '@tanstack/react-query';
 import { DoctorSummary, FacilitySummaryDTO } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
 import {
   MEDICAL_SPECIALIZATIONS,
   JK_ALL_DISTRICTS,
@@ -162,27 +160,11 @@ export function HomeClient({ initialDoctors, initialFacilities }: HomeClientProp
 
   // Slot Booking Modal State
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
-  const [bookingSlotId, setBookingSlotId] = useState<string>('s1');
-  const [isBooking, setIsBooking] = useState(false);
 
-  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId);
+  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) ?? null;
 
   const handleOpenBooking = (doctorId: string) => {
     setSelectedDoctorId(doctorId);
-  };
-
-  const handleConfirmBooking = () => {
-    if (!selectedDoctor) return;
-    setIsBooking(true);
-    setTimeout(() => {
-      setIsBooking(false);
-      setSelectedDoctorId(null);
-      toast(
-        'Appointment Request Sent!',
-        `Your request with ${selectedDoctor.name} has been submitted for confirmation.`,
-        'success'
-      );
-    }, 1000);
   };
 
   return (
@@ -209,11 +191,11 @@ export function HomeClient({ initialDoctors, initialFacilities }: HomeClientProp
                 Search administrator-approved doctors and public healthcare facilities across all 20 districts of Jammu and Kashmir before you travel.
               </p>
 
-              {/* Prominent Opening Actions: Get Started vs Already Have an Account */}
+              {/* Prominent Opening Actions: Register Now vs Already Have an Account */}
               <div className="flex flex-wrap items-center gap-3 pt-1">
                 <Link href="/get-started">
                   <Button variant="default" size="lg" className="gap-2 shadow-lg font-bold px-7">
-                    Get Started
+                    Register Now
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -677,69 +659,12 @@ export function HomeClient({ initialDoctors, initialFacilities }: HomeClientProp
         </div>
       </section>
 
-      {/* Interactive Slot Booking Modal */}
-      <Modal
-        isOpen={!!selectedDoctorId}
+      {/* Interactive Appointment Booking Modal */}
+      <BookAppointmentModal
+        doctor={selectedDoctor}
         onClose={() => setSelectedDoctorId(null)}
-        title={`Request Appointment — ${selectedDoctor?.name}`}
-        description={`${selectedDoctor?.specialization} • ${selectedDoctor?.clinicName}`}
-      >
-        {selectedDoctor && (
-          <div className="space-y-5 pt-2">
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-              <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-              <div>
-                <p className="font-semibold text-slate-800">
-                  {selectedDoctor.affiliatedFacilities?.[0]?.name || selectedDoctor.clinicName}
-                </p>
-                <p className="text-slate-500">
-                  {[selectedDoctor.clinicAddress, selectedDoctor.city, selectedDoctor.district]
-                    .filter(Boolean)
-                    .join(', ')}
-                </p>
-              </div>
-            </div>
-
-            <SlotPicker
-              selectedSlotId={bookingSlotId}
-              onSelectSlot={(id) => setBookingSlotId(id)}
-            />
-
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-slate-700">
-                Reason for Visit (Optional)
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Briefly describe your symptoms or routine checkup requirement..."
-                className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500"
-              ></textarea>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <span className="text-xs text-slate-500 font-semibold">
-                Consultation Fee:{' '}
-                {(selectedDoctor.consultationFee ?? selectedDoctor.fee) > 0
-                  ? formatCurrency(selectedDoctor.consultationFee ?? selectedDoctor.fee)
-                  : 'Not listed'}
-              </span>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setSelectedDoctorId(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  isLoading={isBooking}
-                  onClick={handleConfirmBooking}
-                >
-                  Confirm Request
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </Modal>
+        redirectBasePath="/"
+      />
     </div>
   );
 }

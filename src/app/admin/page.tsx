@@ -29,7 +29,6 @@ import {
 } from 'lucide-react';
 
 type StatusFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
-type RoleFilter = 'ALL' | 'PATIENT' | 'DOCTOR' | 'ADMIN';
 
 interface AdminUserRow {
   id: string;
@@ -125,7 +124,6 @@ export default function AdminDashboardPage() {
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('PENDING');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -142,7 +140,7 @@ export default function AdminDashboardPage() {
     try {
       const params = new URLSearchParams();
       params.set('status', statusFilter);
-      params.set('role', roleFilter);
+      params.set('role', 'DOCTOR');
       if (searchQuery.trim()) {
         params.set('search', searchQuery.trim());
       }
@@ -170,7 +168,7 @@ export default function AdminDashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [statusFilter, roleFilter, searchQuery]);
+  }, [statusFilter, searchQuery]);
 
   useEffect(() => {
     if (!authLoading && sessionUser?.role === 'ADMIN') {
@@ -273,10 +271,10 @@ export default function AdminDashboardPage() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-amber-600" />
-            Admin Approval Dashboard
+            Admin Doctor Approval Dashboard
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Review patient &amp; clinician registration requests stored in PostgreSQL and manage account access.
+            Review healthcare professional (doctor) registration requests stored in PostgreSQL and manage clinician approval.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -316,7 +314,7 @@ export default function AdminDashboardPage() {
           onClick={() => setStatusFilter('APPROVED')}
         >
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-1.5">
-            <span>Approved Accounts</span>
+            <span>Approved Doctors</span>
             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
           </div>
           <p className="text-3xl font-extrabold text-emerald-600">{counts.approved}</p>
@@ -329,7 +327,7 @@ export default function AdminDashboardPage() {
           onClick={() => setStatusFilter('REJECTED')}
         >
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-1.5">
-            <span>Rejected Accounts</span>
+            <span>Rejected Doctors</span>
             <XCircle className="h-4 w-4 text-rose-600" />
           </div>
           <p className="text-3xl font-extrabold text-rose-600">{counts.rejected}</p>
@@ -342,7 +340,7 @@ export default function AdminDashboardPage() {
           onClick={() => setStatusFilter('ALL')}
         >
           <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-1.5">
-            <span>Total Accounts</span>
+            <span>Total Doctors</span>
             <Users className="h-4 w-4 text-brand-600" />
           </div>
           <p className="text-3xl font-extrabold text-slate-900">{counts.total}</p>
@@ -375,21 +373,9 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          <select
-            aria-label="Filter by account type"
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-            className="h-10 rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="ALL">All Account Types</option>
-            <option value="PATIENT">Patients Only</option>
-            <option value="DOCTOR">Doctors Only</option>
-            <option value="ADMIN">Admins Only</option>
-          </select>
-
           <div className="w-full sm:w-64">
             <Input
-              placeholder="Search name or email..."
+              placeholder="Search doctor name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               leftIcon={<Search className="h-4 w-4" />}

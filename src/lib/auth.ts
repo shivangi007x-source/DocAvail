@@ -12,6 +12,18 @@ import {
 export { signJwtToken, verifyJwtToken, TOKEN_COOKIE_NAME };
 export type { TokenPayload };
 
+/**
+ * Sets `Secure` cookies when served over HTTPS (e.g., Vercel production),
+ * while allowing HTTP localhost cookies during local previews and E2E runs.
+ */
+export function isSecureCookieRequest(req: Request): boolean {
+  const forwardedProto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim().toLowerCase();
+  if (forwardedProto) {
+    return forwardedProto === 'https';
+  }
+  return req.url.startsWith('https://');
+}
+
 export async function getSessionUser() {
   const cookieStore = cookies();
   const token = cookieStore.get(TOKEN_COOKIE_NAME)?.value;
@@ -69,7 +81,8 @@ export async function getSessionUser() {
     },
   });
 
-  if (!user || user.approvalStatus !== 'APPROVED') {
+  const isPatientAllowed = user?.role === 'PATIENT' && user.approvalStatus !== 'REJECTED';
+  if (!user || (!isPatientAllowed && user.approvalStatus !== 'APPROVED')) {
     return null;
   }
 
@@ -150,15 +163,22 @@ export async function requireAuthUser(
     };
   }
 
-  if (requireApproved && dbUser.approvalStatus !== 'APPROVED') {
+  const requiresAdminApproval = dbUser.role !== 'PATIENT';
+  if (
+    requireApproved &&
+    (dbUser.approvalStatus === 'REJECTED' ||
+      (requiresAdminApproval && dbUser.approvalStatus !== 'APPROVED'))
+  ) {
     const isRejected = dbUser.approvalStatus === 'REJECTED';
     return {
       ok: false,
       response: NextResponse.json(
         {
           error: isRejected
-            ? 'Your account registration was rejected by an administrator.'
-            : 'Your account is awaiting administrator approval.',
+            ? dbUser.rejectionReason
+              ? `Your account registration was rejected: ${dbUser.rejectionReason}`
+              : 'Your account registration was rejected by an administrator.'
+            : 'Your account is pending administrator approval and cannot access this feature yet.',
           code: isRejected ? 'ACCOUNT_REJECTED' : 'ACCOUNT_PENDING',
           approvalStatus: dbUser.approvalStatus,
           rejectionReason: dbUser.rejectionReason,

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -87,9 +88,10 @@ const DEMO_DOCTORS = [
 
 export default function LoginForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get('redirect');
-  const { setSession, refetchUser } = useAuth();
+  const { setSession } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -144,8 +146,9 @@ export default function LoginForm() {
       }
 
       toast('Welcome to DocAvail!', `Signed in as ${data.user.name}`, 'success');
+      await queryClient.invalidateQueries();
       setSession(data.user);
-      refetchUser();
+      router.refresh();
 
       // Determine correct landing route
       if (redirectPath && redirectPath !== '/login' && redirectPath !== '/unauthorized') {

@@ -51,3 +51,7 @@ tools/
 
 .vercel
 .env*
+
+!.env.example
+.local-pgdata/
+.local-pgpass.tmp

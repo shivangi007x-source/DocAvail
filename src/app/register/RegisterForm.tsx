@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/context/AuthContext';
 import { FacilitySummaryDTO } from '@/lib/types';
 import { MEDICAL_SPECIALIZATIONS, CITIES, JK_ALL_DISTRICTS } from '@/lib/constants';
 import {
@@ -49,6 +50,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
     forcedRole ||
     (searchParams.get('role')?.toUpperCase() === 'DOCTOR' ? 'DOCTOR' : 'PATIENT');
   const { toast } = useToast();
+  const { setSession, refetchUser } = useAuth();
 
   const [activeTab, setActiveTab] = useState<'PATIENT' | 'DOCTOR'>(initialRole);
   const [isLoading, setIsLoading] = useState(false);
@@ -182,9 +184,15 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
         return;
       }
 
+      if (data.user) {
+        setSession(data.user);
+        refetchUser();
+        router.refresh();
+      }
+
       toast(
-        'Account Created!',
-        'Your account is saved and awaiting admin approval. Exploring nearby healthcare now.',
+        'Account Active!',
+        'Your patient account is now active. Exploring nearby Jammu & Kashmir healthcare.',
         'success'
       );
 
@@ -585,8 +593,8 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
                       </strong>
                     </p>
                   </div>
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px]">
-                    New patient accounts require administrator approval before accessing private medical history or booking appointments. After creating your account, you will proceed directly to Step 4 to discover approved doctors and verified facilities near District {patientDistrict}.
+                  <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px]">
+                    Your patient account activates immediately upon registration — no admin approval needed. After creating your account, you can sign in anytime and explore approved doctors and verified facilities near District {patientDistrict}.
                   </div>
                 </div>
               )}

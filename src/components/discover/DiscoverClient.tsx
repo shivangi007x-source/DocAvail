@@ -142,30 +142,30 @@ export function DiscoverClient() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Post-Registration Pending Approval Confirmation */}
+      {/* Post-Registration Active Account Confirmation */}
       {isRegistered && (
-        <Card className="p-6 border-amber-200 bg-gradient-to-r from-amber-50 via-white to-emerald-50/40 shadow-sm">
+        <Card className="p-6 border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-brand-50/40 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="busy" dot>
-                  PENDING ADMIN APPROVAL
+                <Badge variant="available" dot>
+                  ACCOUNT ACTIVE
                 </Badge>
                 <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
                   <CheckCircle2 className="h-4 w-4" />
-                  Step 4 of 4 · Account Saved &amp; Ready for Review
+                  Step 4 of 4 · Ready for Healthcare Access
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-                Patient Registration Submitted{selectedDistrict ? ` — District ${selectedDistrict}` : ''}
+                Welcome to DocAvail{selectedDistrict ? ` — District ${selectedDistrict}` : ''}
               </h1>
               <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                Your patient account has been saved in DocAvail with <strong className="text-slate-900">PENDING</strong> status. Protected patient medical history and appointment booking unlock once an administrator approves your account. Meanwhile, explore approved doctors and verified healthcare facilities near you below.
+                Your patient account is <strong className="text-emerald-700">active</strong> right away — no administrator approval required. Explore approved doctors and verified healthcare facilities near you below, or visit your patient dashboard.
               </p>
             </div>
-            <Link href="/login" className="shrink-0">
+            <Link href="/patient/dashboard" className="shrink-0">
               <Button variant="default" size="sm" className="gap-1.5">
-                Go to Sign In
+                Patient Dashboard
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>

@@ -54,12 +54,19 @@ export async function GET(req: NextRequest) {
       status: a.status,
       consultationType: a.consultationType,
       reasonForVisit: a.reasonForVisit,
+      symptoms: a.symptoms,
+      existingConditions: a.existingConditions,
+      currentMedications: a.currentMedications,
+      knownAllergies: a.knownAllergies,
       patientNotes: a.patientNotes,
       doctorNotes: a.doctorNotes,
       createdAt: a.createdAt.toISOString(),
     }));
 
-    return NextResponse.json({ appointments: formatted });
+    return NextResponse.json(
+      { appointments: formatted },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Error fetching doctor appointments:', error);
     return NextResponse.json({ error: 'Failed to retrieve appointments' }, { status: 500 });

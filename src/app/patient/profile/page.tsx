@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -12,6 +13,8 @@ import { useToast } from '@/components/ui/Toast';
 import { User, ShieldCheck, HeartPulse, CheckCircle2, Phone, MapPin, Calendar } from 'lucide-react';
 
 export default function PatientProfilePage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, refetchUser } = useAuth();
   const { toast } = useToast();
 
@@ -26,10 +29,12 @@ export default function PatientProfilePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['patient-profile-data'],
     queryFn: async () => {
-      const res = await fetch('/api/patient/me/profile');
+      const res = await fetch('/api/patient/me/profile', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load profile');
       return res.json();
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   useEffect(() => {
@@ -62,9 +67,19 @@ export default function PatientProfilePage() {
       if (!res.ok) throw new Error(resData.error || 'Failed to update profile');
       return resData;
     },
-    onSuccess: () => {
-      toast('Profile Updated', 'Your medical and personal information has been saved.', 'success');
+    onSuccess: async (resData) => {
+      if (resData?.profile) {
+        queryClient.setQueryData(['patient-profile-data'], { profile: resData.profile });
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['patient-profile-data'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['auth-me'] }),
+      ]);
       refetchUser();
+      router.refresh();
+      toast('Profile Updated', 'Your medical and personal information has been saved.', 'success');
     },
     onError: (err: any) => {
       toast('Update Failed', err.message, 'error');

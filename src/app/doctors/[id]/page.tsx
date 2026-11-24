@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -12,6 +12,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { SlotPicker } from '@/components/ui/SlotPicker';
+import {
+  AppointmentIntakeFields,
+  AppointmentIntakeValues,
+  EMPTY_APPOINTMENT_INTAKE,
+} from '@/components/appointments/AppointmentIntakeFields';
 import { useToast } from '@/components/ui/Toast';
 import { formatCurrency } from '@/lib/utils';
 import {
@@ -40,6 +45,7 @@ export default function DoctorPublicProfilePage() {
   const doctorId = params.id as string;
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Booking form state
   const [selectedDate, setSelectedDate] = useState<string>(
@@ -47,8 +53,7 @@ export default function DoctorPublicProfilePage() {
   );
   const [selectedSlotId, setSelectedSlotId] = useState<string>('s2');
   const [consultationType, setConsultationType] = useState<'IN_PERSON' | 'VIDEO'>('IN_PERSON');
-  const [reasonForVisit, setReasonForVisit] = useState('');
-  const [patientNotes, setPatientNotes] = useState('');
+  const [intake, setIntake] = useState<AppointmentIntakeValues>(EMPTY_APPOINTMENT_INTAKE);
 
   // Available sample slots
   const slots = [
@@ -85,6 +90,8 @@ export default function DoctorPublicProfilePage() {
       return resData;
     },
     onSuccess: (resData) => {
+      queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
       toast('Appointment Confirmed!', resData.message || 'Your appointment has been successfully scheduled.', 'success');
       router.push('/patient/appointments');
     },
@@ -107,6 +114,11 @@ export default function DoctorPublicProfilePage() {
       return;
     }
 
+    if (!intake.reasonForVisit.trim()) {
+      toast('Reason Required', 'Please provide a reason for your appointment.', 'error');
+      return;
+    }
+
     const slotObj = slots.find((s) => s.id === selectedSlotId);
     const chosenTime = slotObj ? slotObj.time : '10:30 AM';
 
@@ -116,8 +128,11 @@ export default function DoctorPublicProfilePage() {
       startTime: chosenTime,
       endTime: chosenTime.replace('30', '00'), // approximate 30 min
       consultationType,
-      reasonForVisit: reasonForVisit || 'Specialist Consultation',
-      patientNotes: patientNotes || undefined,
+      reasonForVisit: intake.reasonForVisit.trim(),
+      symptoms: intake.symptoms.trim() || undefined,
+      existingConditions: intake.existingConditions.trim() || undefined,
+      currentMedications: intake.currentMedications.trim() || undefined,
+      knownAllergies: intake.knownAllergies.trim() || undefined,
     });
   };
 
@@ -427,32 +442,11 @@ export default function DoctorPublicProfilePage() {
                 />
               </div>
 
-              {/* Reason for Visit */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Reason for Visit / Condition
-                </label>
-                <Input
-                  placeholder="e.g. Blood sugar management, Asthma review..."
-                  value={reasonForVisit}
-                  onChange={(e) => setReasonForVisit(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Symptoms or Notes (Optional)
-                </label>
-                <textarea
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                  rows={2}
-                  placeholder="Provide context or recent symptoms..."
-                  value={patientNotes}
-                  onChange={(e) => setPatientNotes(e.target.value)}
-                />
-              </div>
+              <AppointmentIntakeFields
+                values={intake}
+                onChange={setIntake}
+                disabled={bookMutation.isPending}
+              />
 
               {/* Booking Button */}
               <Button

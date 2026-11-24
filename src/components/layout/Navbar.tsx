@@ -58,18 +58,18 @@ export const Navbar: React.FC = () => {
             
             {user?.role === 'PATIENT' && (
               <>
-                <Link href="/patient/dashboard" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/patient/dashboard" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/patient/medical-history" className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
+                <Link href="/patient/medical-history" prefetch={false} className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
                   <FileText className="h-4 w-4" />
                   My Medical History
                 </Link>
-                <Link href="/patient/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/patient/appointments" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   <Calendar className="h-4 w-4" />
                   Appointments
                 </Link>
-                <Link href="/patient/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/patient/profile" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   <UserIcon className="h-4 w-4" />
                   My Profile
                 </Link>
@@ -78,22 +78,22 @@ export const Navbar: React.FC = () => {
 
             {user?.role === 'DOCTOR' && (
               <>
-                <Link href="/doctor/dashboard" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/doctor/dashboard" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   Dashboard
                 </Link>
-                <Link href="/doctor/patients" className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
+                <Link href="/doctor/patients" prefetch={false} className="flex items-center gap-1 text-brand-700 font-semibold hover:text-brand-800">
                   <Users className="h-4 w-4" />
                   Patient Records
                 </Link>
-                <Link href="/doctor/appointments" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/doctor/appointments" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   <Calendar className="h-4 w-4" />
                   Appointments
                 </Link>
-                <Link href="/doctor/schedule" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/doctor/schedule" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   <Clock3 className="h-4 w-4" />
                   Working Hours
                 </Link>
-                <Link href="/doctor/profile" className="flex items-center gap-1 hover:text-brand-600 transition-colors">
+                <Link href="/doctor/profile" prefetch={false} className="flex items-center gap-1 hover:text-brand-600 transition-colors">
                   <UserIcon className="h-4 w-4" />
                   My Profile
                 </Link>
@@ -101,7 +101,7 @@ export const Navbar: React.FC = () => {
             )}
 
             {user?.role === 'ADMIN' && (
-              <Link href="/admin" className="flex items-center gap-1.5 text-amber-700 font-semibold hover:text-amber-800">
+              <Link href="/admin" prefetch={false} className="flex items-center gap-1.5 text-amber-700 font-semibold hover:text-amber-800">
                 <ShieldCheck className="h-4 w-4" />
                 Admin Panel
               </Link>
@@ -109,11 +109,11 @@ export const Navbar: React.FC = () => {
 
             {!user && (
               <>
-                <Link href="/patient/medical-history" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                <Link href="/patient/medical-history" prefetch={false} className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
                   <FileText className="h-4 w-4 text-brand-600" />
                   Patient History
                 </Link>
-                <Link href="/doctor/dashboard" className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
+                <Link href="/doctor/dashboard" prefetch={false} className="flex items-center gap-1.5 hover:text-brand-600 transition-colors">
                   <Stethoscope className="h-4 w-4 text-brand-600" />
                   Doctor Portal
                 </Link>
@@ -153,7 +153,7 @@ export const Navbar: React.FC = () => {
                 </Link>
                 <Link href="/get-started">
                   <Button variant="default" size="sm" className="shadow-sm">
-                    Get Started
+                    Register Now
                   </Button>
                 </Link>
               </>
@@ -286,10 +286,11 @@ export const Navbar: React.FC = () => {
             </Link>
           )}
 
-          {!user && (
+            {!user && (
             <>
               <Link
                 href="/patient/medical-history"
+                prefetch={false}
                 className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -298,6 +299,7 @@ export const Navbar: React.FC = () => {
               </Link>
               <Link
                 href="/doctor/dashboard"
+                prefetch={false}
                 className="flex items-center gap-2 py-2 px-3 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -340,7 +342,7 @@ export const Navbar: React.FC = () => {
               </Link>
               <Link href="/get-started" onClick={() => setMobileMenuOpen(false)}>
                 <Button variant="default" size="sm" className="w-full text-xs shadow-sm">
-                  Get Started
+                  Register Now
                 </Button>
               </Link>
             </div>

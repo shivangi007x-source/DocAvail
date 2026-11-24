@@ -2,19 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
 import { DoctorSummary } from '@/lib/types';
 import { DoctorCard } from '@/components/ui/DoctorCard';
+import { BookAppointmentModal } from '@/components/appointments/BookAppointmentModal';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Modal } from '@/components/ui/Modal';
-import { SlotPicker } from '@/components/ui/SlotPicker';
-import { StatusIndicator } from '@/components/ui/StatusIndicator';
-import { useToast } from '@/components/ui/Toast';
 import { useDoctorAvailabilityStream } from '@/hooks/useDoctorAvailability';
 import {
   MEDICAL_SPECIALIZATIONS,
@@ -28,15 +23,11 @@ import {
   Filter,
   RotateCcw,
   Sparkles,
-  CheckCircle,
   Activity,
   HeartPulse,
 } from 'lucide-react';
 
 export default function FindDoctorPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
@@ -47,8 +38,6 @@ export default function FindDoctorPage() {
 
   // Booking modal state
   const [selectedDoctorId, setSelectedDoctorId] = useState<string | null>(null);
-  const [bookingSlotId, setBookingSlotId] = useState<string>('s2');
-  const [isBooking, setIsBooking] = useState(false);
 
   // Fetch doctors with search query parameters passed to the backend
   const { data: doctorsData, isLoading } = useQuery<{
@@ -74,7 +63,7 @@ export default function FindDoctorPage() {
   });
 
   const doctors = doctorsData?.doctors || [];
-  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId);
+  const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) ?? null;
 
   const handleQuickConditionClick = (condition: string) => {
     if (searchQuery === condition) {
@@ -89,64 +78,6 @@ export default function FindDoctorPage() {
     setSelectedSpecialty('');
     setSelectedDistrict('');
     setAvailabilityFilter('ALL');
-  };
-
-  const handleConfirmBooking = async () => {
-    if (!selectedDoctor) return;
-
-    if (!user) {
-      toast('Sign In Required', 'Please sign in with an approved patient account to schedule an appointment.', 'error');
-      router.push(`/login?redirect=/doctors`);
-      return;
-    }
-
-    if (user.role === 'DOCTOR') {
-      toast('Account Notice', 'Doctor accounts cannot schedule patient appointments. Please use a patient account.', 'info');
-      return;
-    }
-
-    setIsBooking(true);
-    try {
-      const slotMap: Record<string, string> = {
-        s1: '09:30 AM',
-        s2: '10:30 AM',
-        s3: '11:30 AM',
-        s4: '02:00 PM',
-        s5: '03:30 PM',
-        s6: '04:30 PM',
-      };
-      const chosenTime = slotMap[bookingSlotId] || '10:30 AM';
-
-      const res = await fetch('/api/patient/me/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          doctorId: selectedDoctor.id,
-          date: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-          startTime: chosenTime,
-          endTime: chosenTime.replace('30', '00'),
-          consultationType: 'IN_PERSON',
-          reasonForVisit: `Consultation for ${selectedDoctor.specialization}`,
-        }),
-      });
-
-      const resData = await res.json();
-      if (!res.ok) {
-        throw new Error(resData.error || 'Failed to book appointment');
-      }
-
-      toast(
-        'Appointment Confirmed!',
-        `Your consultation with ${selectedDoctor.name} has been confirmed.`,
-        'success'
-      );
-      setSelectedDoctorId(null);
-      router.push('/patient/appointments');
-    } catch (err: any) {
-      toast('Booking Failed', err.message, 'error');
-    } finally {
-      setIsBooking(false);
-    }
   };
 
   return (
@@ -330,63 +261,11 @@ export default function FindDoctorPage() {
       )}
 
       {/* Appointment Slot Booking Modal */}
-      {selectedDoctor && (
-        <Modal
-          isOpen={!!selectedDoctorId}
-          onClose={() => setSelectedDoctorId(null)}
-          title={`Book Consultation with ${selectedDoctor.name}`}
-          size="lg"
-        >
-          <div className="space-y-5">
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-              <div>
-                <p className="font-bold text-slate-900">{selectedDoctor.specialization}</p>
-                <p className="text-slate-500">{selectedDoctor.clinicName} • {selectedDoctor.city}</p>
-              </div>
-              <StatusIndicator status={selectedDoctor.availabilityStatus} />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                Select Consultation Time Slot
-              </label>
-              <SlotPicker
-                slots={[
-                  { id: 's1', time: '09:30 AM', available: true },
-                  { id: 's2', time: '10:30 AM', available: true },
-                  { id: 's3', time: '11:30 AM', available: false },
-                  { id: 's4', time: '02:00 PM', available: true },
-                  { id: 's5', time: '03:30 PM', available: true },
-                  { id: 's6', time: '04:30 PM', available: true },
-                ]}
-                selectedSlotId={bookingSlotId}
-                onSelectSlot={setBookingSlotId}
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedDoctorId(null)}
-                disabled={isBooking}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleConfirmBooking}
-                isLoading={isBooking}
-                className="gap-1.5"
-              >
-                <CheckCircle className="h-4 w-4" />
-                Confirm Consultation Slot
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      <BookAppointmentModal
+        doctor={selectedDoctor}
+        onClose={() => setSelectedDoctorId(null)}
+        redirectBasePath="/doctors"
+      />
     </div>
   );
 }

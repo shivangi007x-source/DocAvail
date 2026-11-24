@@ -16,8 +16,8 @@ export async function GET(
     if (!auth.ok) return auth.response;
 
     const user = await getSafeAdminUserById(params.id);
-    if (!user) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+    if (!user || user.role !== 'DOCTOR') {
+      return NextResponse.json({ error: 'Doctor application not found' }, { status: 404 });
     }
 
     return NextResponse.json({ user });
@@ -73,6 +73,13 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json({ error: 'Target account not found' }, { status: 404 });
+    }
+
+    if (existing.role !== 'DOCTOR') {
+      return NextResponse.json(
+        { error: 'Only doctor accounts are managed in the approval queue.' },
+        { status: 400 }
+      );
     }
 
     const nextStatus = rawAction === 'APPROVE' ? 'APPROVED' : 'REJECTED';

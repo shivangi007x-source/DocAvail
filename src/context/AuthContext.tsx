@@ -24,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { data: user = null, isLoading, refetch } = useQuery<UserSession | null>({
     queryKey: ['auth-me'],
     queryFn: async () => {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch('/api/auth/me', { cache: 'no-store' });
       if (!res.ok) return null;
       const data = await res.json();
       return data.user;

@@ -6,7 +6,6 @@ import { SAFE_ADMIN_USER_SELECT } from '@/lib/adminUsers';
 export const dynamic = 'force-dynamic';
 
 const VALID_STATUSES = new Set(['PENDING', 'APPROVED', 'REJECTED']);
-const VALID_ROLES = new Set(['PATIENT', 'DOCTOR', 'ADMIN']);
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,17 +16,15 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get('status')?.trim().toUpperCase() || 'ALL';
-    const roleParam = searchParams.get('role')?.trim().toUpperCase() || 'ALL';
     const search = searchParams.get('search')?.trim() || '';
 
-    const where: Record<string, unknown> = {};
+    // Patients do not require admin approval and are excluded from the approval queue.
+    const where: Record<string, unknown> = {
+      role: 'DOCTOR',
+    };
 
     if (statusParam !== 'ALL' && VALID_STATUSES.has(statusParam)) {
       where.approvalStatus = statusParam;
-    }
-
-    if (roleParam !== 'ALL' && VALID_ROLES.has(roleParam)) {
-      where.role = roleParam;
     }
 
     if (search) {
@@ -44,6 +41,7 @@ export async function GET(req: NextRequest) {
         orderBy: [{ createdAt: 'desc' }],
       }),
       prisma.user.groupBy({
+        where: { role: 'DOCTOR' },
         by: ['approvalStatus'],
         _count: { _all: true },
       }),

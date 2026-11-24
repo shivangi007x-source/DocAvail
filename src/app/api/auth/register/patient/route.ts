@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
+import { signJwtToken, TOKEN_COOKIE_NAME, isSecureCookieRequest } from '@/lib/auth';
 import { JK_ALL_DISTRICTS } from '@/lib/constants';
 
 export async function POST(req: Request) {
@@ -108,8 +109,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // Hash password & create user with PENDING approval
+    // Hash password & create immediately active patient account (no admin approval required)
     const passwordHash = await bcrypt.hash(password, 10);
+    const now = new Date();
 
     const user = await prisma.user.create({
       data: {
@@ -117,7 +119,8 @@ export async function POST(req: Request) {
         name: String(name).trim(),
         passwordHash,
         role: 'PATIENT',
-        approvalStatus: 'PENDING',
+        approvalStatus: 'APPROVED',
+        approvedAt: now,
         patientProfile: {
           create: {
             phone: typeof phone === 'string' && phone.trim() ? phone.trim() : null,
@@ -132,6 +135,7 @@ export async function POST(req: Request) {
         name: true,
         role: true,
         approvalStatus: true,
+        approvedAt: true,
         createdAt: true,
         patientProfile: {
           select: {
@@ -143,14 +147,32 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json(
+    const token = await signJwtToken({
+      userId: user.id,
+      email: user.email,
+      role: 'PATIENT',
+      name: user.name,
+      approvalStatus: 'APPROVED',
+    });
+
+    const response = NextResponse.json(
       {
         user,
-        requiresApproval: true,
-        message: 'Registration submitted. Your account is pending administrator approval.',
+        requiresApproval: false,
+        message: 'Registration complete. Your patient account is active and ready to use.',
       },
       { status: 201 }
     );
+
+    response.cookies.set(TOKEN_COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: isSecureCookieRequest(req),
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60,
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     console.error('Patient Registration Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

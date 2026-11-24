@@ -210,9 +210,13 @@ model Appointment {
   startTime        String
   endTime          String
   status           String        @default("PENDING") // PENDING, CONFIRMED, REJECTED, COMPLETED, CANCELLED
-  consultationType String        @default("IN_PERSON") // IN_PERSON, VIDEO
-  reasonForVisit   String?
-  patientNotes     String?
+  consultationType   String        @default("IN_PERSON") // IN_PERSON, VIDEO
+  reasonForVisit     String?
+  symptoms           String?
+  existingConditions String?
+  currentMedications String?
+  knownAllergies     String?
+  patientNotes       String?
   doctorNotes      String?
   rejectionReason  String?
   createdAt        DateTime      @default(now())

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
+import { createPatientAppointment } from '@/lib/appointmentService';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,12 +44,19 @@ export async function GET(req: NextRequest) {
       status: a.status,
       consultationType: a.consultationType,
       reasonForVisit: a.reasonForVisit,
+      symptoms: a.symptoms,
+      existingConditions: a.existingConditions,
+      currentMedications: a.currentMedications,
+      knownAllergies: a.knownAllergies,
       patientNotes: a.patientNotes,
       doctorNotes: a.doctorNotes,
       createdAt: a.createdAt.toISOString(),
     }));
 
-    return NextResponse.json({ appointments: formatted });
+    return NextResponse.json(
+      { appointments: formatted },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Error fetching patient appointments:', error);
     return NextResponse.json({ error: 'Failed to retrieve appointments' }, { status: 500 });
@@ -61,124 +69,18 @@ export async function POST(req: NextRequest) {
       forbiddenMessage: 'Only approved registered patient accounts can book appointments',
     });
     if (!auth.ok) return auth.response;
-    const payload = { userId: auth.user.id };
 
     const body = await req.json();
-    const {
-      doctorId,
-      date,
-      startTime,
-      endTime,
-      consultationType,
-      reasonForVisit,
-      patientNotes,
-    } = body;
+    const result = await createPatientAppointment(auth.user.id, body);
 
-    if (!doctorId) {
-      return NextResponse.json({ error: 'Doctor ID is required' }, { status: 400 });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
-
-    // Resolve DoctorProfile by id or userId
-    let doctorProfile = await prisma.doctorProfile.findUnique({
-      where: { id: doctorId },
-      include: { user: true },
-    });
-
-    if (!doctorProfile) {
-      doctorProfile = await prisma.doctorProfile.findUnique({
-        where: { userId: doctorId },
-        include: { user: true },
-      });
-    }
-
-    if (!doctorProfile) {
-      return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
-    }
-
-    // Ensure PatientProfile exists
-    let patientProfile = await prisma.patientProfile.findUnique({
-      where: { userId: payload.userId },
-    });
-
-    if (!patientProfile) {
-      patientProfile = await prisma.patientProfile.create({
-        data: {
-          userId: payload.userId,
-        },
-      });
-    }
-
-    // Parse appointment date
-    let appointmentDate = new Date();
-    if (date) {
-      const parsed = new Date(date);
-      if (!isNaN(parsed.getTime())) {
-        appointmentDate = parsed;
-      }
-    }
-
-    // Create Appointment in database
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId: payload.userId,
-        doctorId: doctorProfile.id,
-        date: appointmentDate,
-        startTime: startTime || '10:00 AM',
-        endTime: endTime || '10:30 AM',
-        status: 'CONFIRMED',
-        consultationType: consultationType || 'IN_PERSON',
-        reasonForVisit: reasonForVisit || 'Medical Consultation',
-        patientNotes: patientNotes || null,
-      },
-      include: {
-        doctor: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Establish privacy access consent between Patient and Doctor
-    await prisma.doctorPatientAccess.upsert({
-      where: {
-        patientId_doctorId: {
-          patientId: patientProfile.id,
-          doctorId: doctorProfile.id,
-        },
-      },
-      update: {
-        status: 'GRANTED',
-        reason: reasonForVisit || 'Consultation appointment booking consent',
-        revokedAt: null,
-      },
-      create: {
-        patientId: patientProfile.id,
-        doctorId: doctorProfile.id,
-        status: 'GRANTED',
-        reason: reasonForVisit || 'Consultation appointment booking consent',
-      },
-    });
 
     return NextResponse.json({
       success: true,
-      message: `Appointment successfully booked with ${doctorProfile.user.name}`,
-      appointment: {
-        id: appointment.id,
-        doctorId: appointment.doctorId,
-        doctorName: appointment.doctor.user.name,
-        date: appointment.date.toISOString(),
-        startTime: appointment.startTime,
-        endTime: appointment.endTime,
-        status: appointment.status,
-        consultationType: appointment.consultationType,
-        reasonForVisit: appointment.reasonForVisit,
-      },
+      message: `Appointment successfully booked with ${result.appointment.doctorName}`,
+      appointment: result.appointment,
     });
   } catch (error) {
     console.error('Error creating patient appointment:', error);

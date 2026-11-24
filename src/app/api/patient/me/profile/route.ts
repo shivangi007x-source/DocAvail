@@ -4,14 +4,46 @@ import { requireAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+function formatProfileResponse(patientProfile: {
+  id: string;
+  userId: string;
+  phone: string | null;
+  location: string | null;
+  dateOfBirth: Date | null;
+  gender: string | null;
+  bloodGroup: string | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
+}) {
+  return {
+    id: patientProfile.id,
+    userId: patientProfile.userId,
+    name: patientProfile.user.name,
+    email: patientProfile.user.email,
+    phone: patientProfile.phone || '',
+    location: patientProfile.location || '',
+    dateOfBirth: patientProfile.dateOfBirth
+      ? patientProfile.dateOfBirth.toISOString().split('T')[0]
+      : '',
+    gender: patientProfile.gender || '',
+    bloodGroup: patientProfile.bloodGroup || '',
+  };
+}
+
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireAuthUser(req, ['PATIENT', 'ADMIN']);
     if (!auth.ok) return auth.response;
     const payload = { userId: auth.user.id };
 
-    const patientProfile = await prisma.patientProfile.findUnique({
+    const patientProfile = await prisma.patientProfile.upsert({
       where: { userId: payload.userId },
+      update: {},
+      create: { userId: payload.userId },
       include: {
         user: {
           select: {
@@ -24,23 +56,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    if (!patientProfile) {
-      return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      profile: {
-        id: patientProfile.id,
-        userId: patientProfile.userId,
-        name: patientProfile.user.name,
-        email: patientProfile.user.email,
-        phone: patientProfile.phone,
-        location: patientProfile.location,
-        dateOfBirth: patientProfile.dateOfBirth?.toISOString().split('T')[0] || '',
-        gender: patientProfile.gender || '',
-        bloodGroup: patientProfile.bloodGroup || '',
-      },
-    });
+    return NextResponse.json(
+      { profile: formatProfileResponse(patientProfile) },
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Error fetching patient profile:', error);
     return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
@@ -56,37 +75,67 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { name, phone, location, dateOfBirth, gender, bloodGroup } = body;
 
-    // Update User name if provided
-    if (name) {
-      await prisma.user.update({
-        where: { id: payload.userId },
-        data: { name: name.trim() },
-      });
+    let parsedDob: Date | null | undefined = undefined;
+    if (dateOfBirth !== undefined) {
+      if (dateOfBirth === null || String(dateOfBirth).trim() === '') {
+        parsedDob = null;
+      } else {
+        const candidate = new Date(String(dateOfBirth).trim());
+        if (Number.isNaN(candidate.getTime())) {
+          return NextResponse.json({ error: 'Invalid date of birth' }, { status: 400 });
+        }
+        parsedDob = candidate;
+      }
     }
 
-    // Update PatientProfile
-    const updatedProfile = await prisma.patientProfile.upsert({
-      where: { userId: payload.userId },
-      update: {
-        phone: phone !== undefined ? phone.trim() : undefined,
-        location: location !== undefined ? location.trim() : undefined,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        gender: gender !== undefined ? gender : undefined,
-        bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
-      },
-      create: {
-        userId: payload.userId,
-        phone: phone ? phone.trim() : null,
-        location: location ? location.trim() : null,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-        gender: gender || null,
-        bloodGroup: bloodGroup || null,
-      },
+    const cleanOptional = (val: unknown): string | null | undefined => {
+      if (val === undefined) return undefined;
+      if (val === null) return null;
+      const trimmed = String(val).trim();
+      return trimmed ? trimmed : null;
+    };
+
+    const updatedProfile = await prisma.$transaction(async (tx) => {
+      if (typeof name === 'string' && name.trim()) {
+        await tx.user.update({
+          where: { id: payload.userId },
+          data: { name: name.trim() },
+        });
+      }
+
+      return tx.patientProfile.upsert({
+        where: { userId: payload.userId },
+        update: {
+          phone: cleanOptional(phone),
+          location: cleanOptional(location),
+          dateOfBirth: parsedDob,
+          gender: cleanOptional(gender),
+          bloodGroup: cleanOptional(bloodGroup),
+        },
+        create: {
+          userId: payload.userId,
+          phone: cleanOptional(phone) ?? null,
+          location: cleanOptional(location) ?? null,
+          dateOfBirth: parsedDob ?? null,
+          gender: cleanOptional(gender) ?? null,
+          bloodGroup: cleanOptional(bloodGroup) ?? null,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              avatarUrl: true,
+            },
+          },
+        },
+      });
     });
 
     return NextResponse.json({
       message: 'Profile updated successfully',
-      profile: updatedProfile,
+      profile: formatProfileResponse(updatedProfile),
     });
   } catch (error) {
     console.error('Error updating patient profile:', error);

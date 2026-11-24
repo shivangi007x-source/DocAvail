@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/lib/auth';
+import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { WorkingHoursItem } from '@/lib/types';
 
@@ -12,19 +12,34 @@ function parseTimeToMinutes(timeStr: string): number | null {
   return hours * 60 + mins;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+      forbiddenMessage: 'Forbidden: Doctor role required',
+    });
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (user.role !== 'DOCTOR' || !user.doctorProfile) {
+    if (auth.user.role !== 'DOCTOR') {
       return NextResponse.json({ error: 'Forbidden: Doctor role required' }, { status: 403 });
     }
 
-    const doctorId = user.doctorProfile.id;
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId: auth.user.id },
+      select: { id: true, verificationStatus: true },
+    });
+
+    if (!doctorProfile) {
+      return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
+    }
+
+    if (doctorProfile.verificationStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Your doctor profile must be approved before accessing schedules.' },
+        { status: 403 }
+      );
+    }
+
+    const doctorId = doctorProfile.id;
 
     const workingHours = await prisma.workingHours.findMany({
       where: { doctorId },
@@ -73,17 +88,32 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+      forbiddenMessage: 'Forbidden: Doctor role required',
+    });
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (user.role !== 'DOCTOR' || !user.doctorProfile) {
+    if (auth.user.role !== 'DOCTOR') {
       return NextResponse.json({ error: 'Forbidden: Doctor role required' }, { status: 403 });
     }
 
-    const doctorId = user.doctorProfile.id;
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId: auth.user.id },
+      select: { id: true, verificationStatus: true },
+    });
+
+    if (!doctorProfile) {
+      return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
+    }
+
+    if (doctorProfile.verificationStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Your doctor profile must be approved before modifying schedules.' },
+        { status: 403 }
+      );
+    }
+
+    const doctorId = doctorProfile.id;
     const body = await req.json();
     const { schedule } = body;
 

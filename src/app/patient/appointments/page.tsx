@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AppointmentIntakeSummary } from '@/components/appointments/AppointmentIntakeSummary';
 import {
   Calendar,
   Clock,
@@ -27,10 +28,12 @@ export default function PatientAppointmentsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['patient-appointments'],
     queryFn: async () => {
-      const res = await fetch('/api/patient/me/appointments');
+      const res = await fetch('/api/patient/me/appointments', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load appointments');
       return res.json();
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const appointments = data?.appointments || [];
@@ -184,12 +187,7 @@ export default function PatientAppointmentsPage() {
                 </div>
               </div>
 
-              {appt.reasonForVisit && (
-                <div className="bg-slate-50 p-3 rounded-xl text-xs space-y-1">
-                  <span className="font-bold text-slate-900 block">Reason for Visit:</span>
-                  <p className="text-slate-700">{appt.reasonForVisit}</p>
-                </div>
-              )}
+              <AppointmentIntakeSummary appointment={appt} audience="PATIENT" />
 
               {appt.doctorNotes && (
                 <div className="bg-brand-50/60 border border-brand-100 p-3 rounded-xl text-xs space-y-1 text-brand-950 italic">

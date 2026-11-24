@@ -54,10 +54,10 @@ export default function PatientMedicalHistoryPage() {
   const [formFileUrl, setFormFileUrl] = useState('');
 
   // Fetch Patient Medical History & Records
-  const { data, isLoading } = useQuery({
-    queryKey: ['patient-medical-records'],
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['patient-medical-records'], staleTime: 0, refetchOnMount: 'always',
     queryFn: async () => {
-      const res = await fetch('/api/patient/me/medical-records');
+      const res = await fetch('/api/patient/me/medical-records', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load medical history');
       return res.json();
     },
@@ -65,9 +65,9 @@ export default function PatientMedicalHistoryPage() {
 
   // Fetch Doctor Access Grants
   const { data: accessData, refetch: refetchAccess } = useQuery({
-    queryKey: ['patient-doctor-access'],
+    queryKey: ['patient-doctor-access'], staleTime: 0, refetchOnMount: 'always',
     queryFn: async () => {
-      const res = await fetch('/api/patient/me/access');
+      const res = await fetch('/api/patient/me/access', { cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to load doctor access list');
       return res.json();
     },
@@ -268,6 +268,54 @@ export default function PatientMedicalHistoryPage() {
           </Button>
         </div>
       </div>
+
+      {/* Synced Patient Profile Snapshot */}
+      <Card className="p-4 sm:p-5 border-slate-200 bg-slate-50/70">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-brand-600" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              Patient Profile Summary
+            </h2>
+          </div>
+          <Link href="/patient/profile">
+            <Button variant="outline" size="sm" className="text-xs h-7 px-3">
+              Edit Profile
+            </Button>
+          </Link>
+        </div>
+
+        {isError ? (
+          <p className="text-xs text-rose-600">
+            Unable to refresh medical history details right now. Please refresh the page.
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+            <div>
+              <span className="text-[10px] font-semibold uppercase text-slate-400 block">Patient Name</span>
+              <span className="font-bold text-slate-900">{profile?.name || user?.name || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase text-slate-400 block">Phone</span>
+              <span className="font-semibold text-slate-800">{profile?.phone || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase text-slate-400 block">Location</span>
+              <span className="font-semibold text-slate-800">{profile?.location || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase text-slate-400 block">Gender</span>
+              <span className="font-semibold text-slate-800">{profile?.gender || 'Not set'}</span>
+            </div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase text-slate-400 block">Date of Birth</span>
+              <span className="font-semibold text-slate-800">
+                {profile?.dateOfBirth ? formatDate(profile.dateOfBirth) : 'Not set'}
+              </span>
+            </div>
+          </div>
+        )}
+      </Card>
 
       {/* Patient Health Summary Card */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

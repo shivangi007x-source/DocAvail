@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionUser } from '@/lib/auth';
+import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { availabilityBroadcaster } from '@/lib/realtime';
 
@@ -8,20 +8,19 @@ export const dynamic = 'force-dynamic';
 // In-memory rate limiting map: doctorId -> lastUpdateTime
 const lastUpdateMap = new Map<string, number>();
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+      forbiddenMessage: 'Forbidden: Doctor role required',
+    });
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
-    }
-
-    if (user.role !== 'DOCTOR' || !user.doctorProfile) {
+    if (auth.user.role !== 'DOCTOR') {
       return NextResponse.json({ error: 'Forbidden: Doctor role required' }, { status: 403 });
     }
 
     const doctorProfile = await prisma.doctorProfile.findUnique({
-      where: { id: user.doctorProfile.id },
+      where: { userId: auth.user.id },
       select: {
         id: true,
         availabilityStatus: true,
@@ -34,6 +33,13 @@ export async function GET() {
 
     if (!doctorProfile) {
       return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
+    }
+
+    if (doctorProfile.verificationStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Your doctor profile is not approved for live availability controls.' },
+        { status: 403 }
+      );
     }
 
     return NextResponse.json({
@@ -51,17 +57,32 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const user = await getSessionUser();
+    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+      forbiddenMessage: 'Forbidden: Doctor role required',
+    });
+    if (!auth.ok) return auth.response;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized: Authentication required' }, { status: 401 });
-    }
-
-    if (user.role !== 'DOCTOR' || !user.doctorProfile) {
+    if (auth.user.role !== 'DOCTOR') {
       return NextResponse.json({ error: 'Forbidden: Doctor role required' }, { status: 403 });
     }
 
-    const doctorId = user.doctorProfile.id;
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId: auth.user.id },
+      select: { id: true, verificationStatus: true },
+    });
+
+    if (!doctorProfile) {
+      return NextResponse.json({ error: 'Doctor profile not found' }, { status: 404 });
+    }
+
+    if (doctorProfile.verificationStatus !== 'APPROVED') {
+      return NextResponse.json(
+        { error: 'Your doctor profile must be approved before updating live availability.' },
+        { status: 403 }
+      );
+    }
+
+    const doctorId = doctorProfile.id;
 
     // Rate Limiting Safeguard: 1 update per 2 seconds
     const now = Date.now();

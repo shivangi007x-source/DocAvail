@@ -10,9 +10,11 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) return auth.response;
     const payload = { userId: auth.user.id };
 
-    // Retrieve PatientProfile
-    const patientProfile = await prisma.patientProfile.findUnique({
+    // Ensure PatientProfile exists for authenticated patient
+    const patientProfile = await prisma.patientProfile.upsert({
       where: { userId: payload.userId },
+      update: {},
+      create: { userId: payload.userId },
       include: {
         user: {
           select: {
@@ -24,10 +26,6 @@ export async function GET(req: NextRequest) {
         },
       },
     });
-
-    if (!patientProfile) {
-      return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 });
-    }
 
     // Retrieve Medical Records
     const records = await prisma.medicalRecord.findMany({
@@ -132,26 +130,33 @@ export async function GET(req: NextRequest) {
       status: a.status,
       consultationType: a.consultationType,
       reasonForVisit: a.reasonForVisit,
+      symptoms: a.symptoms,
+      existingConditions: a.existingConditions,
+      currentMedications: a.currentMedications,
+      knownAllergies: a.knownAllergies,
       patientNotes: a.patientNotes,
       doctorNotes: a.doctorNotes,
     }));
 
-    return NextResponse.json({
-      profile: {
-        id: patientProfile.id,
-        userId: patientProfile.userId,
-        name: patientProfile.user.name,
-        email: patientProfile.user.email,
-        phone: patientProfile.phone,
-        location: patientProfile.location,
-        dateOfBirth: patientProfile.dateOfBirth?.toISOString() || null,
-        gender: patientProfile.gender,
-        bloodGroup: patientProfile.bloodGroup,
+    return NextResponse.json(
+      {
+        profile: {
+          id: patientProfile.id,
+          userId: patientProfile.userId,
+          name: patientProfile.user.name,
+          email: patientProfile.user.email,
+          phone: patientProfile.phone,
+          location: patientProfile.location,
+          dateOfBirth: patientProfile.dateOfBirth?.toISOString() || null,
+          gender: patientProfile.gender,
+          bloodGroup: patientProfile.bloodGroup,
+        },
+        records: formattedRecords,
+        prescriptions: formattedPrescriptions,
+        consultations: formattedAppointments,
       },
-      records: formattedRecords,
-      prescriptions: formattedPrescriptions,
-      consultations: formattedAppointments,
-    });
+      { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    );
   } catch (error) {
     console.error('Error fetching patient medical records:', error);
     return NextResponse.json({ error: 'Failed to retrieve medical records' }, { status: 500 });
@@ -164,13 +169,11 @@ export async function POST(req: NextRequest) {
     if (!auth.ok) return auth.response;
     const payload = { userId: auth.user.id };
 
-    const patientProfile = await prisma.patientProfile.findUnique({
+    const patientProfile = await prisma.patientProfile.upsert({
       where: { userId: payload.userId },
+      update: {},
+      create: { userId: payload.userId },
     });
-
-    if (!patientProfile) {
-      return NextResponse.json({ error: 'Patient profile not found' }, { status: 404 });
-    }
 
     const body = await req.json();
     const { title, recordType, description, diagnosedDate, severity, status, fileUrl } = body;

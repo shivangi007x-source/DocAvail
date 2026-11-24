@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { signJwtToken, TOKEN_COOKIE_NAME } from '@/lib/auth';
+import { signJwtToken, TOKEN_COOKIE_NAME, isSecureCookieRequest } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
@@ -52,18 +52,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    // Enforce account approval workflow before issuing a session
-    if (user.approvalStatus === 'PENDING') {
-      return NextResponse.json(
-        {
-          error: 'Your account is pending administrator approval. Please check back once an administrator approves your registration.',
-          code: 'ACCOUNT_PENDING',
-          approvalStatus: 'PENDING',
-        },
-        { status: 403 }
-      );
-    }
-
+    // Enforce account approval workflow before issuing a session.
+    // Patient accounts do not require admin approval and remain accessible unless explicitly rejected.
     if (user.approvalStatus === 'REJECTED') {
       return NextResponse.json(
         {
@@ -79,13 +69,27 @@ export async function POST(req: Request) {
       );
     }
 
+    if (user.role !== 'PATIENT' && user.approvalStatus === 'PENDING') {
+      return NextResponse.json(
+        {
+          error: 'Your healthcare provider account is pending administrator approval. Please check back once an administrator approves your registration.',
+          code: 'ACCOUNT_PENDING',
+          approvalStatus: 'PENDING',
+        },
+        { status: 403 }
+      );
+    }
+
+    const effectiveApprovalStatus =
+      user.role === 'PATIENT' ? 'APPROVED' : (user.approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED');
+
     // Issue JWT token & set cookie
     const token = await signJwtToken({
       userId: user.id,
       email: user.email,
       role: user.role as 'PATIENT' | 'DOCTOR' | 'ADMIN',
       name: user.name,
-      approvalStatus: user.approvalStatus as 'PENDING' | 'APPROVED' | 'REJECTED',
+      approvalStatus: effectiveApprovalStatus,
     });
 
     const userPayload = {
@@ -93,7 +97,7 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       role: user.role,
-      approvalStatus: user.approvalStatus,
+      approvalStatus: effectiveApprovalStatus,
       approvedAt: user.approvedAt,
       rejectedAt: user.rejectedAt,
       reviewedAt: user.reviewedAt,
@@ -110,7 +114,7 @@ export async function POST(req: Request) {
 
     response.cookies.set(TOKEN_COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecureCookieRequest(req),
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60,
       path: '/',

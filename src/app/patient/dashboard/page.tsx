@@ -29,11 +29,12 @@ export default function PatientDashboard() {
   const { data: medicalData, isLoading } = useQuery({
     queryKey: ['patient-medical-records'],
     queryFn: async () => {
-      const res = await fetch('/api/patient/me/medical-records');
+      const res = await fetch('/api/patient/me/medical-records', { cache: 'no-store' });
       if (!res.ok) return null;
       return res.json();
     },
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const recordsCount = medicalData?.records?.length || 0;
