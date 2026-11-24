@@ -275,15 +275,27 @@ async function cmdUp() {
     shell: true,
   });
 
-  runChecked('npx', ['tsx', 'scripts/ingest_production_facilities.ts'], {
-    cwd: repoDir,
-    env: {
-      ...process.env,
-      DATABASE_URL: LOCAL_DB_URL,
-      DIRECT_URL: LOCAL_DB_URL,
-    },
-    shell: true,
-  });
+  const prismaCheck = new PrismaClient({ datasources: { db: { url: LOCAL_DB_URL } } });
+  let existingFacilities = 0;
+  try {
+    existingFacilities = await prismaCheck.healthcareFacility.count();
+  } finally {
+    await prismaCheck.$disconnect();
+  }
+
+  if (existingFacilities === 0) {
+    runChecked('npx', ['tsx', 'scripts/ingest_production_facilities.ts'], {
+      cwd: repoDir,
+      env: {
+        ...process.env,
+        DATABASE_URL: LOCAL_DB_URL,
+        DIRECT_URL: LOCAL_DB_URL,
+      },
+      shell: true,
+    });
+  } else {
+    console.log(`[local-db] Existing local facilities preserved (${existingFacilities} records).`);
+  }
 
   await seedIfEmpty();
   console.log(`[local-db] Ready at ${PG_HOST}:${PG_PORT}/${DB_NAME} (isolated from production Neon).`);

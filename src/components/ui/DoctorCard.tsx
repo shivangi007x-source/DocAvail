@@ -6,7 +6,7 @@ import { Card } from './Card';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { StatusIndicator } from './StatusIndicator';
-import { formatCurrency } from '@/lib/utils';
+import { formatClinicAddress, formatCurrency } from '@/lib/utils';
 import { Star, MapPin, Building2, CalendarCheck, ShieldCheck, Clock, Activity, User, ArrowUpRight } from 'lucide-react';
 
 interface DoctorCardProps {
@@ -35,7 +35,7 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
   const timeAgo = formatTimeAgo(doctor.statusUpdatedAt);
   const conditions = doctor.conditions || (doctor.treatedConditions ? doctor.treatedConditions.split(',').map((s) => s.trim()) : []);
   const primaryFacility = doctor.affiliatedFacilities?.[0];
-  const locationParts = [doctor.clinicAddress, doctor.city, doctor.district].filter(Boolean);
+  const clinicLocationText = formatClinicAddress(doctor.clinicAddress, doctor.city, doctor.district);
   const initials = doctor.name
     .replace(/^Dr\.?\s+/i, '')
     .split(/\s+/)
@@ -162,10 +162,10 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBookSlot, onVi
               <span className="font-medium text-slate-800 truncate">{doctor.clinicName}</span>
             </div>
           ) : null}
-          {locationParts.length > 0 && (
+          {clinicLocationText && (
             <div className="flex items-center gap-1.5 truncate">
               <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-              <span className="truncate">{locationParts.join(', ')}</span>
+              <span className="truncate">{clinicLocationText}</span>
             </div>
           )}
         </div>

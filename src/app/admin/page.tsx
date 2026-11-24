@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/components/ui/Toast';
+import { formatClinicAddress } from '@/lib/utils';
 import {
   ShieldCheck,
   Users,
@@ -676,10 +677,13 @@ export default function AdminDashboardPage() {
                       <Building2 className="h-3 w-3" /> Practice Location
                     </p>
                     <p className="font-medium text-slate-900">
-                      {selectedUser.doctorProfile.clinicName} — {selectedUser.doctorProfile.clinicAddress},{' '}
-                      {selectedUser.doctorProfile.city}
-                      {selectedUser.doctorProfile.district ? `, District ${selectedUser.doctorProfile.district}` : ''} (
-                      {selectedUser.doctorProfile.consultationType})
+                      {selectedUser.doctorProfile.clinicName} —{' '}
+                      {formatClinicAddress(
+                        selectedUser.doctorProfile.clinicAddress,
+                        selectedUser.doctorProfile.city,
+                        selectedUser.doctorProfile.district
+                      )}{' '}
+                      ({selectedUser.doctorProfile.consultationType})
                     </p>
                   </div>
                   {selectedUser.doctorProfile.phone && (

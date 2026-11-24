@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { AppointmentIntakeSummary } from '@/components/appointments/AppointmentIntakeSummary';
 import {
+  formatAppointmentDate,
+  formatAppointmentTimeRange,
+} from '@/lib/appointmentTime';
+import {
   Calendar,
   Clock,
   User,
@@ -40,16 +44,6 @@ export default function DoctorAppointmentsPage() {
     if (filter === 'UPCOMING') return a.status === 'CONFIRMED' || a.status === 'PENDING';
     return true;
   });
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -154,6 +148,8 @@ export default function DoctorAppointmentsPage() {
                         ? 'available'
                         : appt.status === 'CONFIRMED'
                         ? 'brand'
+                        : appt.status === 'CANCELLED' || appt.status === 'REJECTED'
+                        ? 'unavailable'
                         : 'busy'
                     }
                     className="text-xs font-bold"
@@ -179,11 +175,11 @@ export default function DoctorAppointmentsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-brand-600 shrink-0" />
-                  <span>{formatDate(appt.date)}</span>
+                  <span>{formatAppointmentDate(appt.date, appt.appointmentDateKey)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-brand-600 shrink-0" />
-                  <span>{appt.startTime} - {appt.endTime}</span>
+                  <span>{formatAppointmentTimeRange(appt.startTime, appt.endTime)} (IST)</span>
                 </div>
               </div>
 

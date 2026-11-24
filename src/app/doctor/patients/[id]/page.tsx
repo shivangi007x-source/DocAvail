@@ -12,6 +12,8 @@ import { Dropdown } from '@/components/ui/Dropdown';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { RecordType, MedicalRecordItem, PrescriptionItem } from '@/lib/types';
+import { formatAppointmentDate, formatAppointmentTimeRange } from '@/lib/appointmentTime';
+import { formatDoctorDisplayName } from '@/lib/utils';
 import {
   FolderOpen,
   ArrowLeft,
@@ -475,7 +477,7 @@ export default function DoctorPatientDetailPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-100">
-                    <span>Prescribing Physician: Dr. {rx.doctorName}</span>
+                    <span>Prescribing Physician: {formatDoctorDisplayName(rx.doctorName)}</span>
                     <span>Prescribed: {formatDate(rx.prescribedDate)}</span>
                   </div>
                 </Card>
@@ -505,7 +507,7 @@ export default function DoctorPatientDetailPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5 text-brand-600" />
-                      Visit Date: {formatDate(c.date)} ({c.startTime} - {c.endTime})
+                      Visit Date: {formatAppointmentDate(c.date, c.appointmentDateKey)} ({formatAppointmentTimeRange(c.startTime, c.endTime)})
                     </span>
                     <Badge variant="brand" className="text-[10px]">{c.status}</Badge>
                   </div>
@@ -606,7 +608,7 @@ export default function DoctorPatientDetailPage() {
                     {record.doctorId && record.doctorName ? (
                       <span className="flex items-center gap-1 font-medium text-brand-800">
                         <Stethoscope className="h-3.5 w-3.5 text-brand-600" />
-                        Author: Dr. {record.doctorName} ({record.doctorSpecialization || 'Physician'})
+                        Author: {formatDoctorDisplayName(record.doctorName)} ({record.doctorSpecialization || 'Physician'})
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 font-medium text-slate-600">

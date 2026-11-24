@@ -21,6 +21,11 @@ import {
   Building2,
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  compareAppointmentsChronologically,
+  formatAppointmentDate,
+  formatAppointmentTimeRange,
+} from '@/lib/appointmentTime';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -37,9 +42,14 @@ export default function PatientDashboard() {
     refetchOnMount: 'always',
   });
 
+  const consultations = (medicalData?.consultations || []) as any[];
   const recordsCount = medicalData?.records?.length || 0;
   const prescriptionsCount = medicalData?.prescriptions?.length || 0;
-  const consultationsCount = medicalData?.consultations?.length || 0;
+  const completedVisitsCount = consultations.filter((c) => c.status === 'COMPLETED').length;
+  const upcomingConsultations = consultations
+    .filter((c) => c.status === 'CONFIRMED' || c.status === 'PENDING')
+    .sort((a, b) => compareAppointmentsChronologically(a, b, 'asc'))
+    .slice(0, 4);
   const allergiesCount =
     medicalData?.records?.filter((r: any) => r.recordType === 'ALLERGY')?.length || 0;
 
@@ -127,7 +137,7 @@ export default function PatientDashboard() {
             <Clock className="h-5 w-5 text-brand-600" />
           </div>
           <p className="text-3xl font-extrabold text-slate-900">
-            {isLoading ? '-' : consultationsCount}
+            {isLoading ? '-' : completedVisitsCount}
           </p>
           <p className="text-xs text-slate-400">Past doctor consultations</p>
         </Card>
@@ -183,6 +193,45 @@ export default function PatientDashboard() {
           </Link>
         </Card>
       </div>
+      {/* Upcoming Appointments Summary */}
+      {upcomingConsultations.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-brand-600" />
+              Upcoming Scheduled Consultations
+            </h3>
+            <Link href="/patient/appointments" className="text-xs font-semibold text-brand-700 hover:underline">
+              Manage Appointments →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {upcomingConsultations.map((c) => (
+              <Card key={c.id} className="p-4 border-slate-200 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-sm text-slate-900">{c.doctorName}</p>
+                    <p className="text-xs text-brand-600 font-medium">{c.doctorSpecialization}</p>
+                  </div>
+                  <Badge variant="brand" className="text-[10px]">
+                    {c.status}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-600">
+                  {formatAppointmentDate(c.date, c.appointmentDateKey)} ·{' '}
+                  {formatAppointmentTimeRange(c.startTime, c.endTime)} (IST)
+                </p>
+                {c.reasonForVisit && (
+                  <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="font-semibold text-slate-900">Reason:</span> {c.reasonForVisit}
+                  </p>
+                )}
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

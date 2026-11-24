@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -54,6 +54,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
 
   const [activeTab, setActiveTab] = useState<'PATIENT' | 'DOCTOR'>(initialRole);
   const [isLoading, setIsLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [doctorSubmitted, setDoctorSubmitted] = useState<SubmittedDoctorRegistration | null>(null);
 
@@ -156,7 +157,14 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
 
   const handlePatientSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (patientStep < 3) {
+      handlePatientNextStep();
+      return;
+    }
+    if (submittingRef.current || isLoading) return;
+
     setError(null);
+    submittingRef.current = true;
     setIsLoading(true);
 
     try {
@@ -180,7 +188,6 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
 
       if (!res.ok) {
         setError(data.error || 'Registration failed.');
-        setIsLoading(false);
         return;
       }
 
@@ -207,6 +214,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
     } catch {
       setError('An unexpected error occurred during registration.');
     } finally {
+      submittingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -240,6 +248,12 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
 
   const handleDoctorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (doctorStep < 3) {
+      handleDoctorNextStep();
+      return;
+    }
+    if (submittingRef.current || isLoading) return;
+
     setError(null);
 
     if (verificationFile && verificationFile.size > 2 * 1024 * 1024) {
@@ -247,6 +261,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsLoading(true);
 
     try {
@@ -282,7 +297,6 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
 
       if (!res.ok) {
         setError(data.error || 'Doctor registration failed.');
-        setIsLoading(false);
         return;
       }
 
@@ -300,6 +314,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
     } catch {
       setError('An unexpected error occurred.');
     } finally {
+      submittingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -417,11 +432,11 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
           <form onSubmit={handlePatientSubmit}>
             <CardHeader className="space-y-3">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span>Patient Onboarding · Step {patientStep} of 4</span>
+                <span>Patient Onboarding · Step {patientStep} of 3</span>
                 <span>Jammu &amp; Kashmir, India</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5" aria-label="Registration progress">
-                {[1, 2, 3, 4].map((s) => (
+              <div className="grid grid-cols-3 gap-1.5" aria-label="Registration progress">
+                {[1, 2, 3].map((s) => (
                   <div
                     key={s}
                     className={`h-1.5 rounded-full transition-colors ${
@@ -442,8 +457,8 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
                   {patientStep === 1
                     ? 'Enter your identity and account credentials.'
                     : patientStep === 2
-                    ? 'Select your J&K district so Step 4 shows nearby doctors & healthcare facilities.'
-                    : 'Review your details before submitting your registration for admin approval.'}
+                    ? 'Select your J&K district so nearby doctors & healthcare facilities are personalized after registration.'
+                    : 'Review your details and click Create Patient Account to finish.'}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -620,12 +635,25 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
                 )}
 
                 {patientStep < 3 ? (
-                  <Button type="button" variant="default" onClick={handlePatientNextStep} className="gap-2 ml-auto">
+                  <Button
+                    key="patient-continue-btn"
+                    type="button"
+                    variant="default"
+                    onClick={handlePatientNextStep}
+                    className="gap-2 ml-auto"
+                  >
                     Continue
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" variant="default" isLoading={isLoading} className="gap-2 ml-auto">
+                  <Button
+                    key="patient-submit-btn"
+                    type="submit"
+                    variant="default"
+                    isLoading={isLoading}
+                    disabled={isLoading}
+                    className="gap-2 ml-auto"
+                  >
                     Create Patient Account
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -910,12 +938,25 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
                 )}
 
                 {doctorStep < 3 ? (
-                  <Button type="button" variant="default" onClick={handleDoctorNextStep} className="gap-2 ml-auto">
+                  <Button
+                    key="doctor-continue-btn"
+                    type="button"
+                    variant="default"
+                    onClick={handleDoctorNextStep}
+                    className="gap-2 ml-auto"
+                  >
                     Continue
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" variant="default" isLoading={isLoading} className="gap-2 ml-auto">
+                  <Button
+                    key="doctor-submit-btn"
+                    type="submit"
+                    variant="default"
+                    isLoading={isLoading}
+                    disabled={isLoading}
+                    className="gap-2 ml-auto"
+                  >
                     Submit Doctor Application
                     <ArrowRight className="h-4 w-4" />
                   </Button>

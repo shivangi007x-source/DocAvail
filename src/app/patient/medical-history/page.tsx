@@ -12,6 +12,11 @@ import { Dropdown } from '@/components/ui/Dropdown';
 import { Modal } from '@/components/ui/Modal';
 import { useToast } from '@/components/ui/Toast';
 import { RecordType, MedicalRecordItem, PrescriptionItem } from '@/lib/types';
+import { formatDoctorDisplayName } from '@/lib/utils';
+import {
+  formatAppointmentDate,
+  formatAppointmentTimeRange,
+} from '@/lib/appointmentTime';
 import {
   FileText,
   Plus,
@@ -605,8 +610,8 @@ export default function PatientMedicalHistoryPage() {
                     )}
 
                     <div className="text-[11px] text-slate-400 pt-1 border-t border-slate-100 flex items-center justify-between">
-                      <span>{formatDate(c.date)}</span>
-                      <span>{c.startTime} - {c.endTime}</span>
+                      <span>{formatAppointmentDate(c.date, c.appointmentDateKey)}</span>
+                      <span>{formatAppointmentTimeRange(c.startTime, c.endTime)}</span>
                     </div>
                   </Card>
                 ))}
@@ -691,7 +696,7 @@ export default function PatientMedicalHistoryPage() {
                       {record.doctorId && record.doctorName ? (
                         <span className="flex items-center gap-1 font-medium text-brand-800">
                           <Stethoscope className="h-3.5 w-3.5 text-brand-600" />
-                          Recorded by: Dr. {record.doctorName} ({record.doctorSpecialization} • {record.doctorClinic})
+                          Recorded by: {formatDoctorDisplayName(record.doctorName)} ({record.doctorSpecialization} • {record.doctorClinic})
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 font-medium text-slate-600">

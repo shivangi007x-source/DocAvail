@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
@@ -11,14 +11,19 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
-import { SlotPicker } from '@/components/ui/SlotPicker';
+import { SlotPicker, SlotOption } from '@/components/ui/SlotPicker';
+import {
+  formatAppointmentDate,
+  getTodayIstDateKey,
+  getTomorrowIstDateKey,
+} from '@/lib/appointmentTime';
 import {
   AppointmentIntakeFields,
   AppointmentIntakeValues,
   EMPTY_APPOINTMENT_INTAKE,
 } from '@/components/appointments/AppointmentIntakeFields';
 import { useToast } from '@/components/ui/Toast';
-import { formatCurrency } from '@/lib/utils';
+import { formatClinicAddress, formatCurrency, formatDoctorDisplayName } from '@/lib/utils';
 import {
   ArrowLeft,
   Star,
@@ -48,22 +53,44 @@ export default function DoctorPublicProfilePage() {
   const queryClient = useQueryClient();
 
   // Booking form state
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date(Date.now() + 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
-  const [selectedSlotId, setSelectedSlotId] = useState<string>('s2');
+  const [selectedDate, setSelectedDate] = useState<string>(getTomorrowIstDateKey);
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('');
   const [consultationType, setConsultationType] = useState<'IN_PERSON' | 'VIDEO'>('IN_PERSON');
   const [intake, setIntake] = useState<AppointmentIntakeValues>(EMPTY_APPOINTMENT_INTAKE);
 
-  // Available sample slots
-  const slots = [
-    { id: 's1', time: '09:30 AM', available: true },
-    { id: 's2', time: '10:30 AM', available: true },
-    { id: 's3', time: '11:30 AM', available: false },
-    { id: 's4', time: '02:00 PM', available: true },
-    { id: 's5', time: '03:30 PM', available: true },
-    { id: 's6', time: '04:30 PM', available: true },
-  ];
+  // Fetch live slot availability for selected IST date
+  const { data: slotsData, isLoading: slotsLoading } = useQuery<{
+    dailyLimit: number;
+    remainingCapacity: number;
+    isDailyLimitReached: boolean;
+    slots: SlotOption[];
+  }>({
+    queryKey: ['doctor-slots', doctorId, selectedDate],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/doctors/${doctorId}/slots?date=${encodeURIComponent(selectedDate)}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) throw new Error('Failed to load live slot availability');
+      return res.json();
+    },
+    enabled: Boolean(doctorId && selectedDate),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const slots = slotsData?.slots || [];
+
+  useEffect(() => {
+    const currentSlots = slotsData?.slots || [];
+    if (currentSlots.length > 0) {
+      const stillValid = currentSlots.some((s) => s.id === selectedSlotId && s.available);
+      if (!stillValid) {
+        const firstOpen = currentSlots.find((s) => s.available);
+        setSelectedSlotId(firstOpen ? firstOpen.id : '');
+      }
+    }
+  }, [slotsData?.slots, selectedSlotId]);
 
   // Fetch Doctor Profile
   const { data, isLoading, error } = useQuery({
@@ -89,13 +116,18 @@ export default function DoctorPublicProfilePage() {
       }
       return resData;
     },
-    onSuccess: (resData) => {
-      queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
+    onSuccess: async (resData) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor-slots'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
+      ]);
       toast('Appointment Confirmed!', resData.message || 'Your appointment has been successfully scheduled.', 'success');
       router.push('/patient/appointments');
     },
     onError: (err: any) => {
+      queryClient.invalidateQueries({ queryKey: ['doctor-slots', doctorId, selectedDate] });
       toast('Booking Failed', err.message, 'error');
     },
   });
@@ -119,14 +151,23 @@ export default function DoctorPublicProfilePage() {
       return;
     }
 
-    const slotObj = slots.find((s) => s.id === selectedSlotId);
-    const chosenTime = slotObj ? slotObj.time : '10:30 AM';
+    const slotObj = slots.find((s) => s.id === selectedSlotId && s.available);
+    if (!slotObj) {
+      toast(
+        'Slot Unavailable',
+        slotsData?.isDailyLimitReached
+          ? 'This doctor has reached the 10-appointment daily limit for the selected date.'
+          : 'Please choose an available time slot.',
+        'error'
+      );
+      return;
+    }
 
     bookMutation.mutate({
       doctorId,
       date: selectedDate,
-      startTime: chosenTime,
-      endTime: chosenTime.replace('30', '00'), // approximate 30 min
+      startTime: slotObj.time,
+      endTime: slotObj.endTime,
       consultationType,
       reasonForVisit: intake.reasonForVisit.trim(),
       symptoms: intake.symptoms.trim() || undefined,
@@ -286,7 +327,7 @@ export default function DoctorPublicProfilePage() {
               </h2>
             </div>
             <p className="text-xs text-slate-500">
-              Dr. {doctor.name.replace('Dr. ', '')} accepts consultations for the following medical conditions and symptoms:
+              {formatDoctorDisplayName(doctor.name)} accepts consultations for the following medical conditions and symptoms:
             </p>
             <div className="flex flex-wrap gap-2 pt-1">
               {doctor.conditions && doctor.conditions.length > 0 ? (
@@ -319,7 +360,9 @@ export default function DoctorPublicProfilePage() {
 
               <div className="space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Location</span>
-                <p className="font-medium text-slate-700">{doctor.clinicAddress}, {doctor.city}</p>
+                <p className="font-medium text-slate-700">
+                  {formatClinicAddress(doctor.clinicAddress, doctor.city, doctor.district)}
+                </p>
               </div>
 
               <div className="space-y-1 bg-slate-50 p-3.5 rounded-xl border border-slate-100 sm:col-span-2">
@@ -424,7 +467,7 @@ export default function DoctorPublicProfilePage() {
                 <Input
                   type="date"
                   value={selectedDate}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getTodayIstDateKey()}
                   onChange={(e) => setSelectedDate(e.target.value)}
                   required
                 />
@@ -439,6 +482,11 @@ export default function DoctorPublicProfilePage() {
                   slots={slots}
                   selectedSlotId={selectedSlotId}
                   onSelectSlot={setSelectedSlotId}
+                  dateLabel={formatAppointmentDate(selectedDate, selectedDate)}
+                  remainingCapacity={slotsData?.remainingCapacity}
+                  dailyLimit={slotsData?.dailyLimit}
+                  isDailyLimitReached={slotsData?.isDailyLimitReached}
+                  isLoading={slotsLoading}
                 />
               </div>
 
@@ -453,7 +501,12 @@ export default function DoctorPublicProfilePage() {
                 type="submit"
                 variant="default"
                 isLoading={bookMutation.isPending}
-                disabled={!isAvailable && doctor.availabilityStatus === 'UNAVAILABLE'}
+                disabled={
+                  slotsLoading ||
+                  !selectedSlotId ||
+                  Boolean(slotsData?.isDailyLimitReached) ||
+                  (!isAvailable && doctor.availabilityStatus === 'UNAVAILABLE')
+                }
                 className="w-full gap-2 text-xs font-bold py-2.5 shadow-md"
               >
                 <CheckCircle className="h-4 w-4" />
@@ -462,7 +515,7 @@ export default function DoctorPublicProfilePage() {
 
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400 justify-center text-center">
                 <Info className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                <span>Automatically links your medical chart with Dr. {doctor.name}</span>
+                <span>Automatically links your medical chart with {formatDoctorDisplayName(doctor.name)}</span>
               </div>
             </form>
           </Card>

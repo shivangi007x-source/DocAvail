@@ -2,16 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { SlotPicker } from '@/components/ui/SlotPicker';
+import { SlotPicker, SlotOption } from '@/components/ui/SlotPicker';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { useToast } from '@/components/ui/Toast';
 import { useAuth } from '@/context/AuthContext';
 import { DoctorSummary } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
+import { formatClinicAddress, formatCurrency } from '@/lib/utils';
+import {
+  formatAppointmentDate,
+  getTodayIstDateKey,
+  getTomorrowIstDateKey,
+} from '@/lib/appointmentTime';
 import { MapPin, CheckCircle, UserCheck, Video } from 'lucide-react';
 import {
   AppointmentIntakeFields,
@@ -19,14 +24,15 @@ import {
   EMPTY_APPOINTMENT_INTAKE,
 } from './AppointmentIntakeFields';
 
-const DEFAULT_SLOTS = [
-  { id: 's1', time: '09:30 AM', available: true },
-  { id: 's2', time: '10:30 AM', available: true },
-  { id: 's3', time: '11:30 AM', available: false },
-  { id: 's4', time: '02:00 PM', available: true },
-  { id: 's5', time: '03:30 PM', available: true },
-  { id: 's6', time: '04:30 PM', available: true },
-];
+interface SlotsApiResponse {
+  doctorId: string;
+  dateKey: string;
+  dailyLimit: number;
+  activeCount: number;
+  remainingCapacity: number;
+  isDailyLimitReached: boolean;
+  slots: SlotOption[];
+}
 
 interface BookAppointmentModalProps {
   doctor: DoctorSummary | null;
@@ -44,21 +50,46 @@ export function BookAppointmentModal({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [selectedDate, setSelectedDate] = useState(
-    new Date(Date.now() + 24 * 3600 * 1000).toISOString().split('T')[0]
-  );
-  const [bookingSlotId, setBookingSlotId] = useState('s2');
+  const [selectedDate, setSelectedDate] = useState(getTomorrowIstDateKey);
+  const [bookingSlotId, setBookingSlotId] = useState('');
   const [consultationType, setConsultationType] = useState<'IN_PERSON' | 'VIDEO'>('IN_PERSON');
   const [intake, setIntake] = useState<AppointmentIntakeValues>(EMPTY_APPOINTMENT_INTAKE);
   const [isBooking, setIsBooking] = useState(false);
 
+  const { data: slotsData, isLoading: slotsLoading } = useQuery<SlotsApiResponse>({
+    queryKey: ['doctor-slots', doctor?.id || null, selectedDate],
+    queryFn: async () => {
+      const res = await fetch(
+        `/api/doctors/${doctor!.id}/slots?date=${encodeURIComponent(selectedDate)}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) throw new Error('Failed to load live slot availability');
+      return res.json();
+    },
+    enabled: Boolean(doctor?.id && selectedDate),
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const liveSlots = slotsData?.slots || [];
+
   useEffect(() => {
     if (doctor) {
       setIntake(EMPTY_APPOINTMENT_INTAKE);
-      setBookingSlotId('s2');
       setConsultationType('IN_PERSON');
     }
-  }, [doctor?.id, doctor]);
+  }, [doctor]);
+
+  useEffect(() => {
+    const currentSlots = slotsData?.slots || [];
+    if (currentSlots.length > 0) {
+      const stillValid = currentSlots.some((s) => s.id === bookingSlotId && s.available);
+      if (!stillValid) {
+        const firstOpen = currentSlots.find((s) => s.available);
+        setBookingSlotId(firstOpen ? firstOpen.id : '');
+      }
+    }
+  }, [slotsData?.slots, bookingSlotId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,19 +112,28 @@ export function BookAppointmentModal({
       return;
     }
 
+    const chosenSlot = liveSlots.find((s) => s.id === bookingSlotId && s.available);
+    if (!chosenSlot) {
+      toast(
+        'No Available Slot',
+        slotsData?.isDailyLimitReached
+          ? 'This doctor has reached the 10-appointment daily limit for the selected date.'
+          : 'Please choose an available consultation time slot.',
+        'error'
+      );
+      return;
+    }
+
     setIsBooking(true);
     try {
-      const slot = DEFAULT_SLOTS.find((s) => s.id === bookingSlotId);
-      const chosenTime = slot ? slot.time : '10:30 AM';
-
       const res = await fetch('/api/patient/me/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           doctorId: doctor.id,
           date: selectedDate,
-          startTime: chosenTime,
-          endTime: chosenTime.replace('30', '00'),
+          startTime: chosenSlot.time,
+          endTime: chosenSlot.endTime,
           consultationType,
           reasonForVisit: intake.reasonForVisit.trim(),
           symptoms: intake.symptoms.trim() || undefined,
@@ -105,20 +145,28 @@ export function BookAppointmentModal({
 
       const resData = await res.json();
       if (!res.ok) {
+        await queryClient.invalidateQueries({
+          queryKey: ['doctor-slots', doctor.id, selectedDate],
+        });
         throw new Error(resData.error || 'Failed to book appointment');
       }
 
-      queryClient.invalidateQueries({ queryKey: ['patient-appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['doctor-slots'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
+      ]);
+
       toast(
         'Appointment Confirmed!',
-        `Your consultation with ${doctor.name} has been scheduled.`,
+        `Scheduled with ${doctor.name} (${chosenSlot.time} – ${chosenSlot.endTime}).`,
         'success'
       );
       onClose();
       router.push('/patient/appointments');
     } catch (err: any) {
-      toast('Booking Failed', err.message || 'Could not schedule appointment.', 'error');
+      toast('Booking Conflict', err.message || 'Could not schedule appointment.', 'error');
     } finally {
       setIsBooking(false);
     }
@@ -145,7 +193,7 @@ export function BookAppointmentModal({
                 {doctor.affiliatedFacilities?.[0]?.name || doctor.clinicName}
               </p>
               <p className="text-slate-500 truncate">
-                {[doctor.clinicAddress, doctor.city, doctor.district].filter(Boolean).join(', ')}
+                {formatClinicAddress(doctor.clinicAddress, doctor.city, doctor.district)}
               </p>
             </div>
           </div>
@@ -160,7 +208,7 @@ export function BookAppointmentModal({
             <Input
               type="date"
               value={selectedDate}
-              min={new Date().toISOString().split('T')[0]}
+              min={getTodayIstDateKey()}
               onChange={(e) => setSelectedDate(e.target.value)}
               required
             />
@@ -204,9 +252,14 @@ export function BookAppointmentModal({
             Select Slot
           </label>
           <SlotPicker
-            slots={DEFAULT_SLOTS}
+            slots={liveSlots}
             selectedSlotId={bookingSlotId}
             onSelectSlot={setBookingSlotId}
+            dateLabel={formatAppointmentDate(selectedDate, selectedDate)}
+            remainingCapacity={slotsData?.remainingCapacity}
+            dailyLimit={slotsData?.dailyLimit}
+            isDailyLimitReached={slotsData?.isDailyLimitReached}
+            isLoading={slotsLoading}
           />
         </div>
 
@@ -235,6 +288,7 @@ export function BookAppointmentModal({
               variant="default"
               size="sm"
               isLoading={isBooking}
+              disabled={slotsLoading || !bookingSlotId || Boolean(slotsData?.isDailyLimitReached)}
               className="gap-1.5"
             >
               <CheckCircle className="h-4 w-4" />

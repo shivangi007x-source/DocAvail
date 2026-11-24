@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
+import {
+  compareAppointmentsChronologically,
+  computeSlotRange,
+  toIstDateKey,
+} from '@/lib/appointmentTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,27 +46,33 @@ export async function GET(req: NextRequest) {
       orderBy: { date: 'desc' },
     });
 
-    const formatted = appointments.map((a) => ({
-      id: a.id,
-      patientId: a.patientId,
-      patientProfileId: a.patient.patientProfile?.id || null,
-      patientName: a.patient.name,
-      patientEmail: a.patient.email,
-      phone: a.patient.patientProfile?.phone || null,
-      date: a.date.toISOString(),
-      startTime: a.startTime,
-      endTime: a.endTime,
-      status: a.status,
-      consultationType: a.consultationType,
-      reasonForVisit: a.reasonForVisit,
-      symptoms: a.symptoms,
-      existingConditions: a.existingConditions,
-      currentMedications: a.currentMedications,
-      knownAllergies: a.knownAllergies,
-      patientNotes: a.patientNotes,
-      doctorNotes: a.doctorNotes,
-      createdAt: a.createdAt.toISOString(),
-    }));
+    const formatted = appointments
+      .map((a) => {
+        const range = computeSlotRange(a.startTime, 30, a.endTime);
+        return {
+          id: a.id,
+          patientId: a.patientId,
+          patientProfileId: a.patient.patientProfile?.id || null,
+          patientName: a.patient.name,
+          patientEmail: a.patient.email,
+          phone: a.patient.patientProfile?.phone || null,
+          date: a.date.toISOString(),
+          appointmentDateKey: a.appointmentDateKey || toIstDateKey(a.date),
+          startTime: range?.startTime || a.startTime,
+          endTime: range?.endTime || a.endTime,
+          status: a.status,
+          consultationType: a.consultationType,
+          reasonForVisit: a.reasonForVisit,
+          symptoms: a.symptoms,
+          existingConditions: a.existingConditions,
+          currentMedications: a.currentMedications,
+          knownAllergies: a.knownAllergies,
+          patientNotes: a.patientNotes,
+          doctorNotes: a.doctorNotes,
+          createdAt: a.createdAt.toISOString(),
+        };
+      })
+      .sort((a, b) => compareAppointmentsChronologically(a, b, 'desc'));
 
     return NextResponse.json(
       { appointments: formatted },

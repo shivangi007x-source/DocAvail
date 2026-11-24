@@ -206,10 +206,11 @@ model Appointment {
   patient          User          @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Cascade)
   doctorId         String
   doctor           DoctorProfile @relation("DoctorAppointments", fields: [doctorId], references: [id], onDelete: Cascade)
-  date             DateTime      @default(now())
-  startTime        String
-  endTime          String
-  status           String        @default("PENDING") // PENDING, CONFIRMED, REJECTED, COMPLETED, CANCELLED
+  date               DateTime      @default(now())
+  appointmentDateKey String? // Canonical Asia/Kolkata calendar date (YYYY-MM-DD)
+  startTime          String
+  endTime            String
+  status             String        @default("PENDING") // PENDING, CONFIRMED, REJECTED, COMPLETED, CANCELLED
   consultationType   String        @default("IN_PERSON") // IN_PERSON, VIDEO
   reasonForVisit     String?
   symptoms           String?
@@ -225,6 +226,7 @@ model Appointment {
   @@index([patientId])
   @@index([doctorId])
   @@index([status])
+  @@index([doctorId, appointmentDateKey, status])
 }
 
 model ReportedAccount {

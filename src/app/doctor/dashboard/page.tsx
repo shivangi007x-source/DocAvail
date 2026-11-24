@@ -10,7 +10,12 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { AvailabilityStatus } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
+import { formatClinicAddress, formatCurrency } from '@/lib/utils';
+import {
+  compareAppointmentsChronologically,
+  formatAppointmentDate,
+  formatAppointmentTimeRange,
+} from '@/lib/appointmentTime';
 import {
   Stethoscope,
   ShieldAlert,
@@ -66,6 +71,23 @@ export default function DoctorDashboard() {
     },
     staleTime: 60 * 1000,
   });
+
+  // Fetch Doctor Appointments for Dashboard Summary
+  const { data: apptsData } = useQuery({
+    queryKey: ['doctor-appointments'],
+    queryFn: async () => {
+      const res = await fetch('/api/doctor/me/appointments', { cache: 'no-store' });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const upcomingAppointments = ((apptsData?.appointments || []) as any[])
+    .filter((a) => a.status === 'CONFIRMED' || a.status === 'PENDING')
+    .sort((a, b) => compareAppointmentsChronologically(a, b, 'asc'))
+    .slice(0, 5);
 
   // Mutation to update availability status
   const updateStatusMutation = useMutation({
@@ -516,7 +538,7 @@ export default function DoctorDashboard() {
               </div>
               <div className="flex items-center gap-1.5 text-slate-500">
                 <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                <span>{profile?.clinicAddress}, {profile?.city}</span>
+                <span>{formatClinicAddress(profile?.clinicAddress, profile?.city, profile?.district)}</span>
               </div>
             </div>
           </Card>
@@ -525,22 +547,56 @@ export default function DoctorDashboard() {
 
       {/* SECTION 4: UPCOMING APPOINTMENTS SECTION */}
       <div className="space-y-4">
-        <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-brand-600" />
-          Today&apos;s Upcoming Consultations
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-brand-600" />
+            Upcoming Scheduled Consultations
+          </h3>
+          <Link href="/doctor/appointments">
+            <Button variant="outline" size="sm" className="text-xs gap-1">
+              View All Appointments
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
 
-        <Card className="p-8 text-center border-slate-200 space-y-3">
-          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
-            <Calendar className="h-6 w-6" />
+        {upcomingAppointments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {upcomingAppointments.map((appt) => (
+              <Card key={appt.id} className="p-4 border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-sm text-slate-900">{appt.patientName}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {formatAppointmentDate(appt.date, appt.appointmentDateKey)} ·{' '}
+                      {formatAppointmentTimeRange(appt.startTime, appt.endTime)} (IST)
+                    </p>
+                  </div>
+                  <Badge variant="brand" className="text-[10px]">
+                    {appt.status}
+                  </Badge>
+                </div>
+                {appt.reasonForVisit && (
+                  <p className="text-xs text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="font-semibold text-slate-900">Reason:</span> {appt.reasonForVisit}
+                  </p>
+                )}
+              </Card>
+            ))}
           </div>
-          <div className="space-y-1 max-w-sm mx-auto">
-            <h4 className="font-bold text-slate-800 text-sm">No scheduled consultations today</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              When patients book appointments, they will appear here along with patient notes and consultation mode.
-            </p>
-          </div>
-        </Card>
+        ) : (
+          <Card className="p-8 text-center border-slate-200 space-y-3">
+            <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+              <Calendar className="h-6 w-6" />
+            </div>
+            <div className="space-y-1 max-w-sm mx-auto">
+              <h4 className="font-bold text-slate-800 text-sm">No upcoming consultations</h4>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                When patients book appointments, they will appear here in chronological order along with their submitted intake details.
+              </p>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

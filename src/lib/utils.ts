@@ -38,3 +38,36 @@ export function getStatusLabel(status: string): string {
       return 'Unknown';
   }
 }
+
+export function formatDoctorDisplayName(name?: string | null): string {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  if (!trimmed) return 'Doctor';
+  const stripped = trimmed.replace(/^dr\.?\s+/i, '').trim();
+  return `Dr. ${stripped || trimmed}`;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function formatClinicAddress(...parts: Array<string | null | undefined>): string {
+  const result: string[] = [];
+
+  for (const raw of parts) {
+    if (typeof raw !== 'string') continue;
+    const trimmed = raw.trim();
+    if (!trimmed) continue;
+
+    const existing = result.join(', ');
+    if (existing) {
+      const tokenRegex = new RegExp(`(?:^|[,\\s])${escapeRegExp(trimmed)}(?:$|[,\\s])`, 'i');
+      if (tokenRegex.test(existing)) {
+        continue;
+      }
+    }
+
+    result.push(trimmed);
+  }
+
+  return result.join(', ');
+}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
+import { computeSlotRange, toIstDateKey } from '@/lib/appointmentTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,25 +119,29 @@ export async function GET(req: NextRequest) {
       createdAt: p.createdAt.toISOString(),
     }));
 
-    const formattedAppointments = appointments.map((a) => ({
-      id: a.id,
-      doctorId: a.doctorId,
-      doctorName: a.doctor.user.name,
-      doctorSpecialization: a.doctor.specialization,
-      clinicName: a.doctor.clinicName,
-      date: a.date.toISOString(),
-      startTime: a.startTime,
-      endTime: a.endTime,
-      status: a.status,
-      consultationType: a.consultationType,
-      reasonForVisit: a.reasonForVisit,
-      symptoms: a.symptoms,
-      existingConditions: a.existingConditions,
-      currentMedications: a.currentMedications,
-      knownAllergies: a.knownAllergies,
-      patientNotes: a.patientNotes,
-      doctorNotes: a.doctorNotes,
-    }));
+    const formattedAppointments = appointments.map((a) => {
+      const range = computeSlotRange(a.startTime, 30, a.endTime);
+      return {
+        id: a.id,
+        doctorId: a.doctorId,
+        doctorName: a.doctor.user.name,
+        doctorSpecialization: a.doctor.specialization,
+        clinicName: a.doctor.clinicName,
+        date: a.date.toISOString(),
+        appointmentDateKey: a.appointmentDateKey || toIstDateKey(a.date),
+        startTime: range?.startTime || a.startTime,
+        endTime: range?.endTime || a.endTime,
+        status: a.status,
+        consultationType: a.consultationType,
+        reasonForVisit: a.reasonForVisit,
+        symptoms: a.symptoms,
+        existingConditions: a.existingConditions,
+        currentMedications: a.currentMedications,
+        knownAllergies: a.knownAllergies,
+        patientNotes: a.patientNotes,
+        doctorNotes: a.doctorNotes,
+      };
+    });
 
     return NextResponse.json(
       {
