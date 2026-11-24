@@ -350,7 +350,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
               </p>
             )}
             <p className="leading-relaxed">
-              Your doctor dashboard access and public homepage/directory visibility remain disabled until a DocAvail administrator approves your credentials. Once approved, you will appear publicly and on the homepage automatically.
+              Your doctor dashboard access and public homepage/directory visibility remain disabled until a DocAvail administrator approves your credentials. A verification link has also been dispatched to confirm your email address. Once approved, please verify your phone number as well to enable clinical controls.
             </p>
           </div>
         </CardContent>

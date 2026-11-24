@@ -15,6 +15,9 @@ export interface UserSession {
   rejectedAt?: string | null;
   reviewedAt?: string | null;
   rejectionReason?: string | null;
+  emailVerifiedAt?: string | null;
+  phoneVerifiedAt?: string | null;
+  verificationRequired?: boolean;
   avatarUrl?: string;
   patientProfile?: {
     id?: string;

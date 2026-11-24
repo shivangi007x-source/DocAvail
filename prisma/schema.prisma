@@ -22,17 +22,22 @@ model User {
   approvedAt      DateTime?
   rejectedAt      DateTime?
   reviewedAt      DateTime?
-  reviewedById    String?
-  rejectionReason String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  reviewedById         String?
+  rejectionReason      String?
+  emailVerifiedAt      DateTime?
+  phoneVerifiedAt      DateTime?
+  verificationRequired Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   // Relationships
-  patientProfile      PatientProfile?
-  doctorProfile       DoctorProfile?
-  patientAppointments Appointment[]     @relation("PatientAppointments")
-  notifications       Notification[]    @relation("UserNotifications")
-  reportsSubmitted    ReportedAccount[] @relation("SubmittedReports")
+  patientProfile          PatientProfile?
+  doctorProfile           DoctorProfile?
+  patientAppointments     Appointment[]            @relation("PatientAppointments")
+  notifications           Notification[]           @relation("UserNotifications")
+  emailVerificationTokens EmailVerificationToken[] @relation("UserEmailVerificationTokens")
+  phoneVerificationOtps   PhoneVerificationOtp[]   @relation("UserPhoneVerificationOtps")
+  reportsSubmitted        ReportedAccount[]        @relation("SubmittedReports")
   reportsReceived     ReportedAccount[] @relation("ReceivedReports")
   reviewsGiven        Review[]          @relation("PatientReviews")
 
@@ -324,5 +329,38 @@ model DoctorFacilityAffiliation {
   @@unique([doctorId, facilityId])
   @@index([doctorId])
   @@index([facilityId])
+}
+
+model EmailVerificationToken {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation("UserEmailVerificationTokens", fields: [userId], references: [id], onDelete: Cascade)
+  email      String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PhoneVerificationOtp {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation("UserPhoneVerificationOtps", fields: [userId], references: [id], onDelete: Cascade)
+  phoneE164     String
+  otpHash       String
+  expiresAt     DateTime
+  consumedAt    DateTime?
+  invalidatedAt DateTime?
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  createdAt     DateTime  @default(now())
+
+  @@index([userId, createdAt])
+  @@index([userId, phoneE164])
+  @@index([expiresAt])
 }
 

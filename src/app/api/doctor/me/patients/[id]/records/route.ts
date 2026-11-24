@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuthUser } from '@/lib/auth';
+import { requireVerifiedAccount } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+    const auth = await requireVerifiedAccount(req, ['DOCTOR', 'ADMIN'], {
       forbiddenMessage: 'Forbidden. Doctor account required.',
     });
     if (!auth.ok) return auth.response;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
 import { getDivisionForDistrict } from '@/lib/constants';
+import { normalizePhoneToE164 } from '@/lib/phone';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +46,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const {
       name,
+      phone,
       treatedConditions,
       consultationFee,
       clinicName,
@@ -55,6 +57,23 @@ export async function PATCH(req: NextRequest) {
       experience,
       qualification,
     } = body;
+
+    let normalizedPhoneUpdate: string | null | undefined = undefined;
+    if (phone !== undefined) {
+      const trimmed = phone === null ? '' : String(phone).trim();
+      if (trimmed) {
+        const e164 = normalizePhoneToE164(trimmed);
+        if (!e164) {
+          return NextResponse.json(
+            { error: 'Please provide a valid Indian (+91) or E.164 phone number.' },
+            { status: 400 }
+          );
+        }
+        normalizedPhoneUpdate = e164;
+      } else {
+        normalizedPhoneUpdate = null;
+      }
+    }
 
     const cleanDistrict =
       district !== undefined
@@ -69,16 +88,28 @@ export async function PATCH(req: NextRequest) {
           : null
         : undefined;
 
-    if (name) {
+    const currentProfile = await prisma.doctorProfile.findUnique({
+      where: { userId: payload.userId },
+      select: { phone: true },
+    });
+    const currentNormalizedPhone = normalizePhoneToE164(currentProfile?.phone);
+    const phoneChanged =
+      normalizedPhoneUpdate !== undefined && normalizedPhoneUpdate !== currentNormalizedPhone;
+
+    if (name || phoneChanged) {
       await prisma.user.update({
         where: { id: payload.userId },
-        data: { name: name.trim() },
+        data: {
+          ...(name ? { name: name.trim() } : {}),
+          ...(phoneChanged ? { phoneVerifiedAt: null } : {}),
+        },
       });
     }
 
     const updated = await prisma.doctorProfile.update({
       where: { userId: payload.userId },
       data: {
+        phone: normalizedPhoneUpdate,
         treatedConditions: treatedConditions !== undefined ? treatedConditions.trim() : undefined,
         consultationFee: consultationFee !== undefined ? parseFloat(consultationFee) : undefined,
         clinicName: clinicName !== undefined ? clinicName.trim() : undefined,

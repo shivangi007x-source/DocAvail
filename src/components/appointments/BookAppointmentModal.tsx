@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
@@ -270,6 +271,23 @@ export function BookAppointmentModal({
           disabled={isBooking}
         />
 
+        {user?.role === 'PATIENT' &&
+          user.verificationRequired &&
+          (!user.emailVerifiedAt || !user.phoneVerifiedAt) && (
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1">
+              <p className="font-semibold">
+                Verify both your email address and phone number before scheduling an appointment.
+              </p>
+              <Link
+                href="/patient/dashboard#verification"
+                onClick={onClose}
+                className="inline-block font-bold text-brand-700 underline hover:text-brand-800"
+              >
+                Verify now on your dashboard →
+              </Link>
+            </div>
+          )}
+
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
           <span className="text-xs text-slate-500 font-semibold">
             Consultation Fee: {fee > 0 ? formatCurrency(fee) : 'Not listed'}
@@ -289,7 +307,16 @@ export function BookAppointmentModal({
               variant="default"
               size="sm"
               isLoading={isBooking}
-              disabled={slotsLoading || !bookingSlotId || Boolean(slotsData?.isDailyLimitReached)}
+              disabled={
+                slotsLoading ||
+                !bookingSlotId ||
+                Boolean(slotsData?.isDailyLimitReached) ||
+                Boolean(
+                  user?.role === 'PATIENT' &&
+                    user.verificationRequired &&
+                    (!user.emailVerifiedAt || !user.phoneVerifiedAt)
+                )
+              }
               className="gap-1.5"
             >
               <CheckCircle className="h-4 w-4" />

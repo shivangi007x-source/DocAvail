@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAuthUser } from '@/lib/auth';
+import { requireAuthUser, requireVerifiedAccount } from '@/lib/auth';
 import { createPatientAppointment } from '@/lib/appointmentService';
 import {
   compareAppointmentsChronologically,
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAuthUser(req, ['PATIENT', 'ADMIN'], {
+    const auth = await requireVerifiedAccount(req, ['PATIENT', 'ADMIN'], {
       forbiddenMessage: 'Only approved registered patient accounts can book appointments',
     });
     if (!auth.ok) return auth.response;

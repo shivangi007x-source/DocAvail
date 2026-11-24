@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuthUser } from '@/lib/auth';
+import { requireVerifiedAccount } from '@/lib/auth';
 import { createPatientAppointment } from '@/lib/appointmentService';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const auth = await requireAuthUser(req, ['PATIENT', 'ADMIN'], {
+    const auth = await requireVerifiedAccount(req, ['PATIENT', 'ADMIN'], {
       forbiddenMessage: 'Only approved patient accounts can schedule appointments.',
     });
     if (!auth.ok) return auth.response;

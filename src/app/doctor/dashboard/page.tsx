@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { VerificationCard } from '@/components/verification/VerificationCard';
 import { AvailabilityStatus } from '@/lib/types';
 import { formatClinicAddress, formatCurrency } from '@/lib/utils';
 import {
@@ -210,6 +211,9 @@ export default function DoctorDashboard() {
           </div>
         </div>
       )}
+
+      {/* Email & Phone Verification */}
+      <VerificationCard />
 
       {/* SECTION 1: PROMINENT REAL-TIME AVAILABILITY CONTROLLER */}
       <Card className="border-2 border-brand-200/80 shadow-md bg-gradient-to-br from-white via-white to-brand-50/20 p-6 space-y-6">

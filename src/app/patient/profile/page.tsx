@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { useToast } from '@/components/ui/Toast';
+import { VerificationCard } from '@/components/verification/VerificationCard';
 import { User, ShieldCheck, HeartPulse, CheckCircle2, Phone, MapPin, Calendar } from 'lucide-react';
 
 export default function PatientProfilePage() {
@@ -75,6 +76,7 @@ export default function PatientProfilePage() {
         queryClient.invalidateQueries({ queryKey: ['patient-profile-data'] }),
         queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
         queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
+        queryClient.invalidateQueries({ queryKey: ['verification-status'] }),
         queryClient.invalidateQueries({ queryKey: ['auth-me'] }),
       ]);
       refetchUser();
@@ -222,6 +224,8 @@ export default function PatientProfilePage() {
           </div>
         </form>
       </Card>
+
+      <VerificationCard />
     </div>
   );
 }

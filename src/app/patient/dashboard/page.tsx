@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { VerificationCard } from '@/components/verification/VerificationCard';
 import {
   compareAppointmentsChronologically,
   formatAppointmentDate,
@@ -194,6 +195,9 @@ export default function PatientDashboard() {
           </Link>
         </Card>
       </div>
+      {/* Email & Phone Verification */}
+      <VerificationCard />
+
       {/* Notification Centre */}
       <NotificationCenter variant="dashboard" />
 

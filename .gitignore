@@ -55,3 +55,4 @@ tools/
 !.env.example
 .local-pgdata/
 .local-pgpass.tmp
+.local-verification-outbox.jsonl

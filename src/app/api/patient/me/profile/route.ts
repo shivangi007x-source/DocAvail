@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuthUser } from '@/lib/auth';
+import { normalizePhoneToE164 } from '@/lib/phone';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,18 +96,46 @@ export async function PATCH(req: NextRequest) {
       return trimmed ? trimmed : null;
     };
 
+    let normalizedPhoneUpdate: string | null | undefined = undefined;
+    if (phone !== undefined) {
+      const cleaned = cleanOptional(phone);
+      if (cleaned) {
+        const e164 = normalizePhoneToE164(cleaned);
+        if (!e164) {
+          return NextResponse.json(
+            { error: 'Please provide a valid Indian (+91) or E.164 phone number.' },
+            { status: 400 }
+          );
+        }
+        normalizedPhoneUpdate = e164;
+      } else {
+        normalizedPhoneUpdate = null;
+      }
+    }
+
     const updatedProfile = await prisma.$transaction(async (tx) => {
-      if (typeof name === 'string' && name.trim()) {
+      const currentProfile = await tx.patientProfile.findUnique({
+        where: { userId: payload.userId },
+        select: { phone: true },
+      });
+      const currentNormalizedPhone = normalizePhoneToE164(currentProfile?.phone);
+      const phoneChanged =
+        normalizedPhoneUpdate !== undefined && normalizedPhoneUpdate !== currentNormalizedPhone;
+
+      if ((typeof name === 'string' && name.trim()) || phoneChanged) {
         await tx.user.update({
           where: { id: payload.userId },
-          data: { name: name.trim() },
+          data: {
+            ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
+            ...(phoneChanged ? { phoneVerifiedAt: null } : {}),
+          },
         });
       }
 
       return tx.patientProfile.upsert({
         where: { userId: payload.userId },
         update: {
-          phone: cleanOptional(phone),
+          phone: normalizedPhoneUpdate,
           location: cleanOptional(location),
           dateOfBirth: parsedDob,
           gender: cleanOptional(gender),
@@ -114,7 +143,7 @@ export async function PATCH(req: NextRequest) {
         },
         create: {
           userId: payload.userId,
-          phone: cleanOptional(phone) ?? null,
+          phone: normalizedPhoneUpdate ?? null,
           location: cleanOptional(location) ?? null,
           dateOfBirth: parsedDob ?? null,
           gender: cleanOptional(gender) ?? null,

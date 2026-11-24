@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { getDivisionForDistrict, JK_ALL_DISTRICTS } from '@/lib/constants';
+import { normalizePhoneToE164 } from '@/lib/phone';
+import { issueEmailVerificationForUser } from '@/lib/verificationService';
 
 const ALLOWED_DOC_MIMES = new Set([
   'application/pdf',
@@ -202,6 +204,17 @@ export async function POST(req: Request) {
       );
     }
 
+    let normalizedPhone: string | null = null;
+    if (typeof phone === 'string' && phone.trim()) {
+      normalizedPhone = normalizePhoneToE164(phone.trim());
+      if (!normalizedPhone) {
+        return NextResponse.json(
+          { error: 'Please provide a valid Indian (+91) or E.164 phone number.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const parsedExp = typeof experience === 'number' ? experience : parseInt(String(experience || '0'), 10) || 0;
     const parsedFee = typeof consultationFee === 'number' ? consultationFee : parseFloat(String(consultationFee || '0')) || 0;
@@ -213,9 +226,10 @@ export async function POST(req: Request) {
         passwordHash,
         role: 'DOCTOR',
         approvalStatus: 'PENDING',
+        verificationRequired: true,
         doctorProfile: {
           create: {
-            phone: typeof phone === 'string' && phone.trim() ? phone.trim() : null,
+            phone: normalizedPhone,
             specialization: specialization.trim(),
             qualification: qualification.trim(),
             experience: parsedExp,
@@ -254,6 +268,9 @@ export async function POST(req: Request) {
         name: true,
         role: true,
         approvalStatus: true,
+        emailVerifiedAt: true,
+        phoneVerifiedAt: true,
+        verificationRequired: true,
         createdAt: true,
         doctorProfile: {
           select: {
@@ -277,6 +294,11 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    await issueEmailVerificationForUser(user.id, {
+      skipCooldown: true,
+      originUrl: new URL(req.url).origin,
+    }).catch(() => null);
 
     return NextResponse.json(
       {

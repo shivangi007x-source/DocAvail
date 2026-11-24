@@ -497,6 +497,23 @@ export default function DoctorPublicProfilePage() {
                 disabled={bookMutation.isPending}
               />
 
+              {user?.role === 'PATIENT' &&
+                user.verificationRequired &&
+                (!user.emailVerifiedAt || !user.phoneVerifiedAt) && (
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs space-y-1.5">
+                    <div className="flex items-start gap-2 font-semibold">
+                      <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                      <span>Email &amp; phone verification required before booking.</span>
+                    </div>
+                    <Link
+                      href="/patient/dashboard#verification"
+                      className="inline-block font-bold text-brand-700 underline hover:text-brand-800"
+                    >
+                      Complete verification on your dashboard →
+                    </Link>
+                  </div>
+                )}
+
               {/* Booking Button */}
               <Button
                 type="submit"
@@ -506,7 +523,12 @@ export default function DoctorPublicProfilePage() {
                   slotsLoading ||
                   !selectedSlotId ||
                   Boolean(slotsData?.isDailyLimitReached) ||
-                  (!isAvailable && doctor.availabilityStatus === 'UNAVAILABLE')
+                  (!isAvailable && doctor.availabilityStatus === 'UNAVAILABLE') ||
+                  Boolean(
+                    user?.role === 'PATIENT' &&
+                      user.verificationRequired &&
+                      (!user.emailVerifiedAt || !user.phoneVerifiedAt)
+                  )
                 }
                 className="w-full gap-2 text-xs font-bold py-2.5 shadow-md"
               >

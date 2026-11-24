@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { signJwtToken, TOKEN_COOKIE_NAME, isSecureCookieRequest } from '@/lib/auth';
 import { JK_ALL_DISTRICTS } from '@/lib/constants';
+import { normalizePhoneToE164 } from '@/lib/phone';
+import { issueEmailVerificationForUser } from '@/lib/verificationService';
 
 export async function POST(req: Request) {
   try {
@@ -110,6 +112,17 @@ export async function POST(req: Request) {
     }
 
     // Hash password & create immediately active patient account (no admin approval required)
+    let normalizedPhone: string | null = null;
+    if (typeof phone === 'string' && phone.trim()) {
+      normalizedPhone = normalizePhoneToE164(phone.trim());
+      if (!normalizedPhone) {
+        return NextResponse.json(
+          { error: 'Please provide a valid Indian (+91) or E.164 phone number.' },
+          { status: 400 }
+        );
+      }
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
     const now = new Date();
 
@@ -121,9 +134,10 @@ export async function POST(req: Request) {
         role: 'PATIENT',
         approvalStatus: 'APPROVED',
         approvedAt: now,
+        verificationRequired: true,
         patientProfile: {
           create: {
-            phone: typeof phone === 'string' && phone.trim() ? phone.trim() : null,
+            phone: normalizedPhone,
             location: formattedLocation,
             dateOfBirth: parsedDob,
           },
@@ -136,6 +150,9 @@ export async function POST(req: Request) {
         role: true,
         approvalStatus: true,
         approvedAt: true,
+        emailVerifiedAt: true,
+        phoneVerifiedAt: true,
+        verificationRequired: true,
         createdAt: true,
         patientProfile: {
           select: {
@@ -146,6 +163,11 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    await issueEmailVerificationForUser(user.id, {
+      skipCooldown: true,
+      originUrl: new URL(req.url).origin,
+    }).catch(() => null);
 
     const token = await signJwtToken({
       userId: user.id,

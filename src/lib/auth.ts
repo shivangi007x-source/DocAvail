@@ -46,6 +46,9 @@ export async function getSessionUser() {
       rejectedAt: true,
       reviewedAt: true,
       rejectionReason: true,
+      emailVerifiedAt: true,
+      phoneVerifiedAt: true,
+      verificationRequired: true,
       createdAt: true,
       patientProfile: {
         select: {
@@ -99,6 +102,9 @@ export interface AuthenticatedDbUser {
   rejectedAt: Date | null;
   reviewedAt: Date | null;
   rejectionReason: string | null;
+  emailVerifiedAt: Date | null;
+  phoneVerifiedAt: Date | null;
+  verificationRequired: boolean;
 }
 
 export type AuthGuardResult =
@@ -143,6 +149,9 @@ export async function requireAuthUser(
       rejectedAt: true,
       reviewedAt: true,
       rejectionReason: true,
+      emailVerifiedAt: true,
+      phoneVerifiedAt: true,
+      verificationRequired: true,
     },
   });
 
@@ -197,4 +206,40 @@ export async function requireAuthUser(
       approvalStatus: dbUser.approvalStatus as ApprovalStatus,
     },
   };
+}
+
+/**
+ * Enforces authentication + role + admin approval AND requires both email & phone verification
+ * for accounts where verificationRequired === true (new Phase 4 accounts), while preserving
+ * pre-migration legacy accounts safely.
+ */
+export async function requireVerifiedAccount(
+  req: NextRequest,
+  allowedRoles: UserRole[],
+  options: { requireApproved?: boolean; forbiddenMessage?: string } = {}
+): Promise<AuthGuardResult> {
+  const auth = await requireAuthUser(req, allowedRoles, options);
+  if (!auth.ok) return auth;
+
+  if (auth.user.verificationRequired) {
+    const missingEmailVerification = !auth.user.emailVerifiedAt;
+    const missingPhoneVerification = !auth.user.phoneVerifiedAt;
+    if (missingEmailVerification || missingPhoneVerification) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          {
+            error:
+              'Please verify both your email address and phone number before performing this action.',
+            code: 'VERIFICATION_REQUIRED',
+            missingEmailVerification,
+            missingPhoneVerification,
+          },
+          { status: 403 }
+        ),
+      };
+    }
+  }
+
+  return auth;
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuthUser } from '@/lib/auth';
+import { requireAuthUser, requireVerifiedAccount } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { WorkingHoursItem } from '@/lib/types';
 
@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const auth = await requireAuthUser(req, ['DOCTOR', 'ADMIN'], {
+    const auth = await requireVerifiedAccount(req, ['DOCTOR', 'ADMIN'], {
       forbiddenMessage: 'Forbidden: Doctor role required',
     });
     if (!auth.ok) return auth.response;

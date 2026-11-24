@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Dropdown } from '@/components/ui/Dropdown';
 import { useToast } from '@/components/ui/Toast';
+import { VerificationCard } from '@/components/verification/VerificationCard';
 import { JK_ALL_DISTRICTS } from '@/lib/constants';
 import {
   Stethoscope,
@@ -295,6 +296,8 @@ export default function DoctorProfilePage() {
           </div>
         </form>
       </Card>
+
+      <VerificationCard />
     </div>
   );
 }
