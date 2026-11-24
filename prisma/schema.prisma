@@ -31,6 +31,7 @@ model User {
   patientProfile      PatientProfile?
   doctorProfile       DoctorProfile?
   patientAppointments Appointment[]     @relation("PatientAppointments")
+  notifications       Notification[]    @relation("UserNotifications")
   reportsSubmitted    ReportedAccount[] @relation("SubmittedReports")
   reportsReceived     ReportedAccount[] @relation("ReceivedReports")
   reviewsGiven        Review[]          @relation("PatientReviews")
@@ -218,15 +219,36 @@ model Appointment {
   currentMedications String?
   knownAllergies     String?
   patientNotes       String?
-  doctorNotes      String?
-  rejectionReason  String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  doctorNotes        String?
+  rejectionReason    String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  notifications      Notification[] @relation("AppointmentNotifications")
 
   @@index([patientId])
   @@index([doctorId])
   @@index([status])
   @@index([doctorId, appointmentDateKey, status])
+}
+
+model Notification {
+  id            String       @id @default(uuid())
+  userId        String
+  user          User         @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  message       String
+  type          String // APPOINTMENT_BOOKED, APPOINTMENT_CANCELLED
+  appointmentId String?
+  appointment   Appointment? @relation("AppointmentNotifications", fields: [appointmentId], references: [id], onDelete: SetNull)
+  isRead        Boolean      @default(false)
+  readAt        DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@unique([userId, type, appointmentId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([appointmentId])
 }
 
 model ReportedAccount {

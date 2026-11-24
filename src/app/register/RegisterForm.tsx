@@ -569,7 +569,7 @@ export default function RegisterForm({ forcedRole }: RegisterFormProps) {
                           Optional Nearby Healthcare Discovery
                         </p>
                         <p className="text-[11px] text-slate-500">
-                          Grant browser location permission to calculate distance to mapped hospitals in Step 4.
+                          Grant browser location permission to calculate distance to mapped hospitals after registration.
                         </p>
                       </div>
                       <Button

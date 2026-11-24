@@ -15,6 +15,10 @@ import {
   parseTimeToMinutes,
   toIstDateKey,
 } from '@/lib/appointmentTime';
+import {
+  createAppointmentBookedNotifications,
+  createAppointmentCancelledNotifications,
+} from '@/lib/notificationService';
 
 export interface AppointmentIntakeInput {
   doctorId?: string;
@@ -212,9 +216,10 @@ export async function createPatientAppointment(
             patientNotes,
           },
           include: {
+            patient: { select: { name: true } },
             doctor: {
               include: {
-                user: { select: { name: true } },
+                user: { select: { id: true, name: true } },
               },
             },
           },
@@ -238,6 +243,19 @@ export async function createPatientAppointment(
             status: 'GRANTED',
             reason: reasonForVisit || 'Consultation appointment booking consent',
           },
+        });
+
+        await createAppointmentBookedNotifications(tx, {
+          appointmentId: created.id,
+          patientUserId,
+          patientName: created.patient.name,
+          doctorUserId: created.doctor.user.id,
+          doctorName: created.doctor.user.name,
+          dateKey,
+          startTime: created.startTime,
+          endTime: created.endTime,
+          consultationType: created.consultationType,
+          reasonForVisit,
         });
 
         return created;
@@ -433,44 +451,88 @@ export async function cancelPatientAppointment(
     return { ok: false, status: 400, error: 'Appointment ID is required.' };
   }
 
-  const existing = await prisma.appointment.findUnique({
-    where: { id: appointmentId },
-    select: { id: true, patientId: true, doctorId: true, status: true, appointmentDateKey: true },
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      const existing = await tx.appointment.findUnique({
+        where: { id: appointmentId },
+        select: {
+          id: true,
+          patientId: true,
+          doctorId: true,
+          date: true,
+          appointmentDateKey: true,
+          startTime: true,
+          endTime: true,
+          status: true,
+          patient: { select: { name: true } },
+          doctor: {
+            include: {
+              user: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
 
-  if (!existing) {
-    return { ok: false, status: 404, error: 'Appointment not found.' };
-  }
+      if (!existing) {
+        return { ok: false, status: 404, error: 'Appointment not found.' };
+      }
 
-  if (callerRole !== 'ADMIN' && existing.patientId !== callerUserId) {
-    return {
-      ok: false,
-      status: 403,
-      error: 'Forbidden. You can only cancel your own appointments.',
-    };
-  }
+      if (callerRole !== 'ADMIN' && existing.patientId !== callerUserId) {
+        return {
+          ok: false,
+          status: 403,
+          error: 'Forbidden. You can only cancel your own appointments.',
+        };
+      }
 
-  if (existing.status === 'COMPLETED') {
-    return { ok: false, status: 400, error: 'Completed appointments cannot be cancelled.' };
-  }
+      if (existing.status === 'COMPLETED') {
+        return { ok: false, status: 400, error: 'Completed appointments cannot be cancelled.' };
+      }
 
-  if (existing.status === 'CANCELLED') {
-    return {
-      ok: true,
-      appointment: {
-        id: existing.id,
-        status: existing.status,
-        doctorId: existing.doctorId,
-        appointmentDateKey: existing.appointmentDateKey,
-      },
-    };
-  }
+      if (existing.status === 'CANCELLED') {
+        return {
+          ok: true,
+          appointment: {
+            id: existing.id,
+            status: existing.status,
+            doctorId: existing.doctorId,
+            appointmentDateKey: existing.appointmentDateKey,
+          },
+        };
+      }
 
-  const updated = await prisma.appointment.update({
-    where: { id: existing.id },
-    data: { status: 'CANCELLED' },
-    select: { id: true, status: true, doctorId: true, appointmentDateKey: true },
-  });
+      const transitioned = await tx.appointment.updateMany({
+        where: {
+          id: existing.id,
+          status: { notIn: ['CANCELLED', 'COMPLETED'] },
+        },
+        data: { status: 'CANCELLED' },
+      });
 
-  return { ok: true, appointment: updated };
+      if (transitioned.count === 1) {
+        await createAppointmentCancelledNotifications(tx, {
+          appointmentId: existing.id,
+          patientUserId: existing.patientId,
+          patientName: existing.patient.name,
+          doctorUserId: existing.doctor.user.id,
+          doctorName: existing.doctor.user.name,
+          date: existing.date,
+          appointmentDateKey: existing.appointmentDateKey,
+          startTime: existing.startTime,
+          endTime: existing.endTime,
+        });
+      }
+
+      return {
+        ok: true,
+        appointment: {
+          id: existing.id,
+          status: 'CANCELLED',
+          doctorId: existing.doctorId,
+          appointmentDateKey: existing.appointmentDateKey,
+        },
+      };
+    },
+    { maxWait: 5000, timeout: 15000 }
+  );
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -22,7 +23,9 @@ import {
   Users,
 } from 'lucide-react';
 
-export default function DoctorAppointmentsPage() {
+function DoctorAppointmentsContent() {
+  const searchParams = useSearchParams();
+  const highlightedAppointmentId = searchParams.get('appointmentId');
   const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'COMPLETED'>('ALL');
 
   const { data, isLoading } = useQuery({
@@ -37,6 +40,14 @@ export default function DoctorAppointmentsPage() {
   });
 
   const appointments = data?.appointments || [];
+
+  useEffect(() => {
+    if (!highlightedAppointmentId || isLoading) return;
+    const el = document.getElementById(`appointment-${highlightedAppointmentId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedAppointmentId, isLoading]);
 
   const filtered = appointments.filter((a: any) => {
     if (filter === 'ALL') return true;
@@ -125,10 +136,17 @@ export default function DoctorAppointmentsPage() {
         </div>
       ) : filtered.length > 0 ? (
         <div className="space-y-4">
-          {filtered.map((appt: any) => (
+          {filtered.map((appt: any) => {
+            const isHighlighted = highlightedAppointmentId === appt.id;
+            return (
             <Card
               key={appt.id}
-              className="p-5 border-slate-200 hover:border-brand-300 transition-all shadow-sm space-y-3"
+              id={`appointment-${appt.id}`}
+              className={`p-5 transition-all shadow-sm space-y-3 ${
+                isHighlighted
+                  ? 'border-brand-500 ring-2 ring-brand-300 bg-brand-50/20'
+                  : 'border-slate-200 hover:border-brand-300'
+              }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-3">
@@ -192,7 +210,8 @@ export default function DoctorAppointmentsPage() {
                 </div>
               )}
             </Card>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-300 p-8 space-y-4">
@@ -204,5 +223,19 @@ export default function DoctorAppointmentsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DoctorAppointmentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="h-36 rounded-2xl bg-slate-100 animate-pulse border border-slate-200" />
+        </div>
+      }
+    >
+      <DoctorAppointmentsContent />
+    </Suspense>
   );
 }

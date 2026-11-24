@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { StatusIndicator } from '@/components/ui/StatusIndicator';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { AvailabilityStatus } from '@/lib/types';
 import { formatClinicAddress, formatCurrency } from '@/lib/utils';
 import {
@@ -545,7 +546,10 @@ export default function DoctorDashboard() {
         </div>
       </div>
 
-      {/* SECTION 4: UPCOMING APPOINTMENTS SECTION */}
+      {/* SECTION 4: NOTIFICATION CENTRE */}
+      <NotificationCenter variant="dashboard" />
+
+      {/* SECTION 5: UPCOMING APPOINTMENTS SECTION */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">

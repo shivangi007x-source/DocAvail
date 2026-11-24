@@ -21,6 +21,7 @@ import {
   Building2,
 } from 'lucide-react';
 import Link from 'next/link';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import {
   compareAppointmentsChronologically,
   formatAppointmentDate,
@@ -193,6 +194,9 @@ export default function PatientDashboard() {
           </Link>
         </Card>
       </div>
+      {/* Notification Centre */}
+      <NotificationCenter variant="dashboard" />
+
       {/* Upcoming Appointments Summary */}
       {upcomingConsultations.length > 0 && (
         <div className="space-y-3">

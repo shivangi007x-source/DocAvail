@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import {
   Activity,
   Search,
@@ -124,24 +125,27 @@ export const Navbar: React.FC = () => {
           {/* Auth Action Buttons / User Menu */}
           <div className="hidden lg:flex items-center gap-3">
             {user ? (
-              <div className="flex items-center gap-3 bg-slate-50 p-1.5 pl-3 rounded-xl border border-slate-200">
-                <div className="text-right">
-                  <p className="text-xs font-bold text-slate-900 leading-tight">{user.name}</p>
-                  <div className="flex items-center justify-end gap-1">
-                    <Badge variant="brand" className="text-[10px] py-0 px-1.5">
-                      {user.role}
-                    </Badge>
+              <div className="flex items-center gap-2.5">
+                <NotificationCenter variant="bell" />
+                <div className="flex items-center gap-3 bg-slate-50 p-1.5 pl-3 rounded-xl border border-slate-200">
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-slate-900 leading-tight">{user.name}</p>
+                    <div className="flex items-center justify-end gap-1">
+                      <Badge variant="brand" className="text-[10px] py-0 px-1.5">
+                        {user.role}
+                      </Badge>
+                    </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={logout}
+                    className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg p-2"
+                    title="Sign Out"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={logout}
-                  className="text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg p-2"
-                  title="Sign Out"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
               </div>
             ) : (
               <>
@@ -162,6 +166,7 @@ export const Navbar: React.FC = () => {
 
           {/* Mobile Menu Toggle Button */}
           <div className="flex lg:hidden items-center gap-2">
+            {user && <NotificationCenter variant="bell" />}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-600 hover:bg-slate-100"

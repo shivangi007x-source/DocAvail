@@ -156,6 +156,7 @@ export function BookAppointmentModal({
         queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
         queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] }),
         queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
+        queryClient.invalidateQueries({ queryKey: ['notifications'] }),
       ]);
 
       toast(

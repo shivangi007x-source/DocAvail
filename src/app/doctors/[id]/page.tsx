@@ -122,6 +122,7 @@ export default function DoctorPublicProfilePage() {
         queryClient.invalidateQueries({ queryKey: ['patient-appointments'] }),
         queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] }),
         queryClient.invalidateQueries({ queryKey: ['patient-medical-records'] }),
+        queryClient.invalidateQueries({ queryKey: ['notifications'] }),
       ]);
       toast('Appointment Confirmed!', resData.message || 'Your appointment has been successfully scheduled.', 'success');
       router.push('/patient/appointments');
